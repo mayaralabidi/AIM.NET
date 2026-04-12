@@ -1,48 +1,521 @@
 ﻿@model aim.Models.Challenge
-
 @{
-    ViewData["Title"] = "Details";
+    ViewData["Title"] = Model.Title;
+    var completedIds = (List<int>)(ViewBag.CompletedTodayIds ?? new List<int>());
+    var easy = Model.Tasks.Where(t => t.Difficulty == aim.Models.enums.DifficultyLevel.Easy).ToList();
+    var medium = Model.Tasks.Where(t => t.Difficulty == aim.Models.enums.DifficultyLevel.Medium).ToList();
+    var hard = Model.Tasks.Where(t => t.Difficulty == aim.Models.enums.DifficultyLevel.Hard).ToList();
+    int totalTasks = Model.Tasks.Count;
+    int doneTasks = Model.Tasks.Count(t => completedIds.Contains(t.Id));
+    int progressPct = totalTasks == 0 ? 0 : (int)Math.Round((double)doneTasks / totalTasks * 100);
 }
 
-<h1>Details</h1>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
 
-<div>
-    <h4>Challenge</h4>
-    <hr />
-    <dl class="row">
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Title)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Title)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Description)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Description)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.PointsReward)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.PointsReward)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.StartDate)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.StartDate)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.EndDate)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.EndDate)
-        </dd>
-    </dl>
-</div>
-<div>
-    <a asp-action="Edit" asp-route-id="@Model?.Id">Edit</a> |
-    <a asp-action="Index">Back to List</a>
+<style>
+    :root {
+        --o: #EF9F27;
+        --o2: #BA7517;
+        --t: #1D9E75;
+        --t2: #085041;
+        --r: #E24B4A;
+        --p: #7F77DD;
+        --dk: #111110;
+        --sf: #1a1918;
+        --cd: #222120;
+        --br: rgba(255,255,255,0.08);
+        --tx: #f0ede8;
+        --mu: #888780;
+    }
+
+    .ch-wrap {
+        background: var(--dk);
+        min-height: 100vh;
+        padding: 28px 20px 80px;
+        font-family: 'DM Sans', sans-serif;
+        color: var(--tx);
+        max-width: 780px;
+        margin: 0 auto;
+    }
+
+    .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        color: var(--mu);
+        text-decoration: none;
+        margin-bottom: 24px;
+        transition: color .15s;
+    }
+
+        .back-link:hover {
+            color: var(--tx);
+        }
+
+    .ch-hero {
+        margin-bottom: 28px;
+    }
+
+    .ch-title {
+        font-family: 'Barlow Condensed', sans-serif;
+        font-size: 36px;
+        font-weight: 700;
+        line-height: 1;
+        margin-bottom: 8px;
+    }
+
+    .ch-meta {
+        font-size: 13px;
+        color: var(--mu);
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+        margin-bottom: 16px;
+    }
+
+    .prog-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 6px;
+    }
+
+    .prog-track {
+        flex: 1;
+        height: 6px;
+        background: rgba(255,255,255,0.08);
+        border-radius: 3px;
+        overflow: hidden;
+    }
+
+    .prog-fill {
+        height: 100%;
+        border-radius: 3px;
+        background: var(--t);
+        transition: width .6s cubic-bezier(.4,0,.2,1);
+    }
+
+    .prog-label {
+        font-family: 'Barlow Condensed', sans-serif;
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--t);
+        min-width: 36px;
+        text-align: right;
+    }
+
+    .stats-strip {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 32px;
+        flex-wrap: wrap;
+    }
+
+    .stat-pill {
+        background: var(--cd);
+        border: 0.5px solid var(--br);
+        border-radius: 8px;
+        padding: 8px 14px;
+        font-size: 12px;
+        color: var(--mu);
+    }
+
+        .stat-pill strong {
+            display: block;
+            font-family: 'Barlow Condensed', sans-serif;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--tx);
+            line-height: 1;
+            margin-bottom: 2px;
+        }
+
+    .section-label {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 11px;
+        font-weight: 500;
+        letter-spacing: .1em;
+        text-transform: uppercase;
+        color: var(--mu);
+        margin-bottom: 12px;
+    }
+
+        .section-label::after {
+            content: '';
+            flex: 1;
+            height: 0.5px;
+            background: var(--br);
+        }
+
+    .diff-badge {
+        font-size: 10px;
+        font-weight: 500;
+        padding: 2px 8px;
+        border-radius: 999px;
+    }
+
+    .diff-e {
+        background: rgba(29,158,117,.15);
+        color: #5DCAA5;
+    }
+
+    .diff-m {
+        background: rgba(239,159,39,.15);
+        color: #FAC775;
+    }
+
+    .diff-h {
+        background: rgba(216,90,48,.15);
+        color: #F0997B;
+    }
+
+    .task-section {
+        margin-bottom: 32px;
+    }
+
+    .task-card {
+        background: var(--cd);
+        border: 0.5px solid var(--br);
+        border-radius: 12px;
+        padding: 16px 18px;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+        transition: border-color .2s;
+    }
+
+        .task-card:hover {
+            border-color: rgba(255,255,255,.16);
+        }
+
+        .task-card.done {
+            opacity: .5;
+        }
+
+    .task-body {
+        flex: 1;
+    }
+
+    .task-title {
+        font-size: 15px;
+        font-weight: 500;
+        color: var(--tx);
+        margin-bottom: 4px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .task-desc {
+        font-size: 12px;
+        color: var(--mu);
+        line-height: 1.5;
+    }
+
+    .pts-tag {
+        font-family: 'Barlow Condensed', sans-serif;
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--o);
+        white-space: nowrap;
+        padding-top: 2px;
+    }
+
+    .btn-complete {
+        background: var(--t);
+        color: #04342C;
+        border: none;
+        border-radius: 8px;
+        padding: 8px 16px;
+        font-size: 13px;
+        font-weight: 700;
+        cursor: pointer;
+        white-space: nowrap;
+        font-family: 'Barlow Condensed', sans-serif;
+        letter-spacing: .5px;
+        transition: opacity .15s, transform .1s;
+        flex-shrink: 0;
+    }
+
+        .btn-complete:hover {
+            opacity: .85;
+        }
+
+        .btn-complete:active {
+            transform: scale(.97);
+        }
+
+    .done-check {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        background: rgba(29,158,117,.15);
+        color: var(--t);
+        font-size: 16px;
+        flex-shrink: 0;
+    }
+
+    .empty-section {
+        font-size: 13px;
+        color: var(--mu);
+        padding: 12px 0;
+        text-align: center;
+    }
+
+    /* Toast */
+    #aim-toast {
+        position: fixed;
+        bottom: 28px;
+        right: 24px;
+        background: var(--cd);
+        border: 0.5px solid rgba(239,159,39,.3);
+        border-radius: 12px;
+        padding: 14px 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        z-index: 999;
+        animation: tIn .35s cubic-bezier(.2,1.4,.4,1) both, tOut .3s ease 3s forwards;
+    }
+
+    .toast-pts {
+        font-family: 'Barlow Condensed', sans-serif;
+        font-size: 22px;
+        font-weight: 700;
+        color: var(--o);
+    }
+
+    .toast-streak {
+        font-size: 12px;
+        color: var(--mu);
+    }
+
+    @@keyframes tIn {
+        from {
+            transform: translateY(20px) scale(.95);
+            opacity: 0;
+        }
+
+        to {
+            transform: none;
+            opacity: 1;
+        }
+    }
+
+    @@keyframes tOut {
+        to {
+            transform: translateY(10px);
+            opacity: 0;
+        }
+    }
+
+    @@media (max-width:560px) {
+        .task-card {
+            flex-wrap: wrap;
+        }
+
+        .btn-complete {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+</style>
+
+<div class="ch-wrap">
+
+    <a asp-action="Index" class="back-link">← All challenges</a>
+
+    {{!-- Hero --}}
+    <div class="ch-hero">
+        <div class="ch-title">@Model.Title</div>
+        <div class="ch-meta">
+            @if (Model.StartDate != default)
+            {
+                <span>Started @Model.StartDate.ToString("MMM d")</span>
+            }
+            @if (Model.EndDate != default(DateTime))
+            {
+                var daysLeft = Math.Max(0, (Model.EndDate - DateTime.UtcNow).Days);
+                <span style="color:@(daysLeft <= 2 ? "#F09595" : "var(--mu)")">
+                    @(daysLeft == 0 ? "Last day" : $"{daysLeft} days left")
+                </span>
+            }
+            <span>@totalTasks tasks</span>
+        </div>
+
+        @if (!string.IsNullOrEmpty(Model.Description))
+        {
+            <p style="font-size:13px;color:var(--mu);line-height:1.6;margin-bottom:16px;">
+                @Model.Description
+            </p>
+        }
+
+        <div class="prog-row">
+            <div class="prog-track">
+                <div class="prog-fill" style="width:@progressPct%"></div>
+            </div>
+            <span class="prog-label">@progressPct%</span>
+        </div>
+        <div style="font-size:11px;color:var(--mu)">@doneTasks of @totalTasks completed today</div>
+    </div>
+
+    <div class="stats-strip">
+        <div class="stat-pill">
+            <strong>@ViewBag.ParticipantScore</strong>
+            Total score
+        </div>
+        <div class="stat-pill">
+            <strong>🔥 @ViewBag.ParticipantStreak</strong>
+            Day streak
+        </div>
+        <div class="stat-pill">
+            <strong>@easy.Count</strong>
+            Easy tasks
+        </div>
+        <div class="stat-pill">
+            <strong>@medium.Count</strong>
+            Medium tasks
+        </div>
+        <div class="stat-pill">
+            <strong>@hard.Count</strong>
+            Hard tasks
+        </div>
+    </div>
+
+    @* ── Easy ── *@
+    <div class="task-section">
+        <div class="section-label">
+            <span class="diff-badge diff-e">Easy</span>
+            <span>×1 points</span>
+        </div>
+        @if (!easy.Any())
+        {
+            <div class="empty-section">No easy tasks in this challenge.</div>
+        }
+        else
+        {
+            foreach (var t in easy)
+            {
+                bool done = completedIds.Contains(t.Id);
+                <div class="task-card @(done ? "done" : "")">
+                    <div class="task-body">
+                        <div class="task-title">
+                            @t.Title
+                        </div>
+                        @if (!string.IsNullOrEmpty(t.Description))
+                        {
+                            <div class="task-desc">@t.Description</div>
+                        }
+                    </div>
+                    <span class="pts-tag">+@(t.PointsValue > 0 ? t.PointsValue : 10) pts</span>
+                    @if (done)
+                    {
+                        <div class="done-check">✓</div>
+                    }
+                    else
+                    {
+                        <form asp-action="Complete" asp-controller="TaskCompletions" method="post" style="flex-shrink:0;">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="taskId" value="@t.Id" />
+                            <input type="hidden" name="challengeId" value="@Model.Id" />
+                            <button type="submit" class="btn-complete">Complete</button>
+                        </form>
+                    }
+                </div>
+            }
+        }
+    </div>
+
+    @* ── Medium ── *@
+    <div class="task-section">
+        <div class="section-label">
+            <span class="diff-badge diff-m">Medium</span>
+            <span>×2 points</span>
+        </div>
+        @if (!medium.Any())
+        {
+            <div class="empty-section">No medium tasks in this challenge.</div>
+        }
+        else
+        {
+            foreach (var t in medium)
+            {
+                bool done = completedIds.Contains(t.Id);
+                <div class="task-card @(done ? "done" : "")">
+                    <div class="task-body">
+                        <div class="task-title">@t.Title</div>
+                        @if (!string.IsNullOrEmpty(t.Description))
+                        {
+                            <div class="task-desc">@t.Description</div>
+                        }
+                    </div>
+                    <span class="pts-tag">+@(t.PointsValue > 0 ? t.PointsValue * 2 : 20) pts</span>
+                    @if (done)
+                    {
+                        <div class="done-check">✓</div>
+                    }
+                    else
+                    {
+                        <form asp-action="Complete" asp-controller="TaskCompletions" method="post" style="flex-shrink:0;">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="taskId" value="@t.Id" />
+                            <input type="hidden" name="challengeId" value="@Model.Id" />
+                            <button type="submit" class="btn-complete" style="background:#BA7517;color:#1a0e00;">Complete</button>
+                        </form>
+                    }
+                </div>
+            }
+        }
+    </div>
+
+    @* ── Hard ── *@
+    <div class="task-section">
+        <div class="section-label">
+            <span class="diff-badge diff-h">Hard</span>
+            <span>×3 points</span>
+        </div>
+        @if (!hard.Any())
+        {
+            <div class="empty-section">No hard tasks in this challenge.</div>
+        }
+        else
+        {
+            foreach (var t in hard)
+            {
+                bool done = completedIds.Contains(t.Id);
+                <div class="task-card @(done ? "done" : "")">
+                    <div class="task-body">
+                        <div class="task-title">@t.Title</div>
+                        @if (!string.IsNullOrEmpty(t.Description))
+                        {
+                            <div class="task-desc">@t.Description</div>
+                        }
+                    </div>
+                    <span class="pts-tag">+@(t.PointsValue > 0 ? t.PointsValue * 3 : 30) pts</span>
+                    @if (done)
+                    {
+                        <div class="done-check">✓</div>
+                    }
+                    else
+                    {
+                        <form asp-action="Complete" asp-controller="TaskCompletions" method="post" style="flex-shrink:0;">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="taskId" value="@t.Id" />
+                            <input type="hidden" name="challengeId" value="@Model.Id" />
+                            <button type="submit" class="btn-complete" style="background:#993C1D;color:#FAECE7;">Complete</button>
+                        </form>
+                    }
+                </div>
+            }
+        }
+    </div>
+
 </div>

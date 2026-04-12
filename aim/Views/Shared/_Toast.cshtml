@@ -1,0 +1,25 @@
+﻿@if (TempData["Toast"] != null)
+{
+    <div class="aim-toast" id="aim-toast">
+        <span class="toast-pts">@TempData["Toast"]</span>
+        @if (TempData["NewStreak"] != null)
+        {
+            <span class="toast-streak">🔥 @TempData["NewStreak"] day streak</span>
+        }
+    </div>
+}
+
+@if (TempData["BadgeUnlocked"] != null)
+{
+    <div class="aim-toast aim-toast-badge" id="aim-badge-toast">
+        <span class="toast-pts" style="font-size:14px;">🏅 Badge unlocked</span>
+        <span class="toast-streak">@TempData["BadgeUnlocked"]</span>
+    </div>
+}
+
+@if (TempData["Error"] != null)
+{
+    <div class="aim-toast aim-toast-error" id="aim-error-toast">
+        <span class="toast-pts" style="font-size:13px;">@TempData["Error"]</span>
+    </div>
+}

@@ -162,6 +162,86 @@ namespace aim.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        // POST: TaskCompletions/Complete
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Complete(int taskId, int challengeId)
+        {
+            // ── Get the current participant ──────────────────────────────────────
+            // Replace this with your actual auth once you add Identity.
+            // For now, grab the first participant from seed data for testing.
+            var participant = await _context.Participants.FirstOrDefaultAsync();
+            if (participant == null) return NotFound();
+
+            var task = await _context.ChallengeTasks
+                .Include(t => t.Challenge)
+                .FirstOrDefaultAsync(t => t.Id == taskId);
+            if (task == null) return NotFound();
+
+            // ── Guard: already completed today? ─────────────────────────────────
+            var today = DateTime.UtcNow.Date;
+            bool alreadyDone = await _context.TaskCompletions.AnyAsync(tc =>
+                tc.ParticipantId == participant.Id &&
+                tc.ChallengeTaskId == taskId &&
+                tc.CompletedAt.Date == today);
+
+            if (alreadyDone)
+            {
+                TempData["Error"] = "Already completed today.";
+                return RedirectToAction("Details", "Challenges", new { id = challengeId });
+            }
+
+            // ── 1. Calculate points ──────────────────────────────────────────────
+            int basePoints = 10;
+            int multiplier = task.Difficulty switch
+            {
+                Models.enums.DifficultyLevel.Easy => 1,
+                Models.enums.DifficultyLevel.Medium => 2,
+                Models.enums.DifficultyLevel.Hard => 3,
+                _ => 1
+            };
+            int pointsEarned = basePoints * multiplier;
+
+            // ── 2. Update streak ─────────────────────────────────────────────────
+            var now = DateTime.UtcNow;
+
+            if (participant.LastActivityDate == null)
+            {
+                participant.CurrentStreak = 1;
+            }
+            else
+            {
+                double hoursSinceLast = (now - participant.LastActivityDate.Value).TotalHours;
+                participant.CurrentStreak = hoursSinceLast < 24
+                    ? participant.CurrentStreak + 1
+                    : 1;
+            }
+
+            if (participant.CurrentStreak > participant.BestStreak)
+                participant.BestStreak = participant.CurrentStreak;
+
+            // ── 3. Update score + timestamp ──────────────────────────────────────
+            participant.TotalScore += pointsEarned;
+            participant.LastActivityDate = now;
+
+            // ── 4. Audit log ─────────────────────────────────────────────────────
+            _context.TaskCompletions.Add(new TaskCompletion
+            {
+                ParticipantId = participant.Id,
+                ChallengeTaskId = taskId,
+                CompletedAt = now,
+                PointsEarned = pointsEarned
+            });
+
+            await _context.SaveChangesAsync();
+
+            // ── 5. TempData for toast ────────────────────────────────────────────
+            TempData["Toast"] = $"+{pointsEarned} pts";
+            TempData["ToastType"] = "points";
+            TempData["NewStreak"] = participant.CurrentStreak;
+
+            return RedirectToAction("Details", "Challenges", new { id = challengeId });
+        }
         private bool TaskCompletionExists(int id)
         {
             return _context.TaskCompletions.Any(e => e.Id == id);

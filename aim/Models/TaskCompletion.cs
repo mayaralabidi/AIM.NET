@@ -3,6 +3,7 @@
     public class TaskCompletion
     {
         public int Id { get; set; }
+        public int PointsEarned { get; set; }
 
         public DateTime CompletedAt { get; set; } = DateTime.Now;
 

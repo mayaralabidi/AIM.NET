@@ -22,7 +22,7 @@ namespace aim.Controllers
         // GET: Teams
         public async Task<IActionResult> Index()
         {
-            return View(await _context.Teams.ToListAsync());
+            return View(await _context.Teams.Include(t => t.Members).ToListAsync());
         }
 
         // GET: Teams/Details/5
@@ -149,6 +149,71 @@ namespace aim.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        // GET: Teams/Join
+        public IActionResult Join()
+        {
+            return View();
+        }
+
+        // POST: Teams/Join
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Join(string inviteCode)
+        {
+            if (string.IsNullOrWhiteSpace(inviteCode))
+            {
+                ViewBag.Error = "Please enter an invite code.";
+                return View();
+            }
+
+            var team = await _context.Teams
+                .FirstOrDefaultAsync(t => t.InviteCode == inviteCode.Trim().ToUpper());
+
+            if (team == null)
+            {
+                ViewBag.Error = "No team found with that code.";
+                return View();
+            }
+
+            // For now grab first participant — replace with Identity later
+            var participant = await _context.Participants.FirstOrDefaultAsync();
+            if (participant == null) return NotFound();
+
+            // Already on this team?
+            if (participant.TeamId == team.Id)
+            {
+                TempData["Error"] = "You're already in this team.";
+                return RedirectToAction("Leaderboard", new { id = team.Id });
+            }
+
+            participant.TeamId = team.Id;
+            await _context.SaveChangesAsync();
+
+            TempData["Toast"] = "Joined " + team.Name + "!";
+            return RedirectToAction("Leaderboard", new { id = team.Id });
+        }
+
+        // GET: Teams/Leaderboard/5
+        public async Task<IActionResult> Leaderboard(int? id)
+        {
+            if (id == null) return NotFound();
+
+            var team = await _context.Teams
+                .Include(t => t.Members)
+                .FirstOrDefaultAsync(t => t.Id == id);
+
+            if (team == null) return NotFound();
+
+            // Sort members by score descending
+            team.Members = team.Members
+                .OrderByDescending(p => p.TotalScore)
+                .ToList();
+
+            var currentParticipant = await _context.Participants.FirstOrDefaultAsync();
+            ViewBag.CurrentParticipantId = currentParticipant?.Id ?? 0;
+
+            return View(team);
+        }
         private bool TeamExists(int id)
         {
             return _context.Teams.Any(e => e.Id == id);

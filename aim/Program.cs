@@ -1,4 +1,5 @@
 using aim.Data;
+using aim.Services;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -7,6 +8,10 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 builder.Services.AddDbContext<AimDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+// Program.cs — register the services
+builder.Services.AddScoped<BadgeService>();
+builder.Services.AddScoped<TaskCompletionService>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

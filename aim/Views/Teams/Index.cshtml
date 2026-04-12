@@ -1,41 +1,157 @@
 ﻿@model IEnumerable<aim.Models.Team>
-
 @{
-    ViewData["Title"] = "Index";
+    ViewData["Title"] = "Teams";
 }
 
-<h1>Index</h1>
+<div class="tl-wrap">
+    <div class="tl-header">
+        <div class="tl-title">Squad <span>Rankings</span></div>
+        <a asp-action="Join" class="join-cta">+ Join a team</a>
+    </div>
 
-<p>
-    <a asp-action="Create">Create New</a>
-</p>
-<table class="table">
-    <thead>
-        <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.Name)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.InviteCode)
-            </th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-@foreach (var item in Model) {
-        <tr>
-            <td>
-                @Html.DisplayFor(modelItem => item.Name)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.InviteCode)
-            </td>
-            <td>
-                <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
-                <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
-                <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>
-            </td>
-        </tr>
-}
-    </tbody>
-</table>
+    @if (!Model.Any())
+    {
+        <div style="text-align:center;padding:60px 20px;color:var(--mu);font-size:14px;">
+            <strong style="display:block;font-size:18px;color:var(--tx);margin-bottom:8px;">No teams yet</strong>
+            Create the first squad and invite your crew.
+        </div>
+    }
+    else
+    {
+        int rank = 1;
+        foreach (var t in Model)
+        {
+            <a asp-action="Leaderboard" asp-route-id="@t.Id" class="team-card">
+                <div class="team-rank">@rank</div>
+                <div class="team-body">
+                    <div class="team-name">@t.Name</div>
+                    <div class="team-meta">
+                        @t.Members.Count members ·
+                        <span class="team-code">@t.InviteCode</span>
+                    </div>
+                </div>
+                <div class="team-score">
+                    <div class="team-score-val">@t.Members.Sum(p => p.TotalScore).ToString("N0")</div>
+                    <div class="team-score-label">team pts</div>
+                </div>
+                <span class="team-arrow">→</span>
+            </a>
+            rank++;
+        }
+    }
+</div>
+
+<style>
+    .tl-wrap {
+        max-width: 680px;
+        margin: 0 auto;
+        padding: 28px 20px 80px;
+    }
+
+    .tl-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 24px;
+    }
+
+    .tl-title {
+        font-family: 'Barlow Condensed', sans-serif;
+        font-size: 32px;
+        font-weight: 700;
+    }
+
+        .tl-title span {
+            color: var(--o);
+        }
+
+    .join-cta {
+        background: var(--o);
+        color: #1a0e00;
+        border-radius: 8px;
+        padding: 8px 16px;
+        font-size: 13px;
+        font-weight: 700;
+        font-family: 'Barlow Condensed', sans-serif;
+        letter-spacing: .5px;
+        transition: opacity .15s;
+    }
+
+        .join-cta:hover {
+            opacity: .85;
+            color: #1a0e00;
+        }
+
+    .team-card {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        background: var(--cd);
+        border: 0.5px solid var(--br);
+        border-radius: 12px;
+        padding: 16px 18px;
+        margin-bottom: 10px;
+        text-decoration: none;
+        transition: border-color .2s;
+    }
+
+        .team-card:hover {
+            border-color: var(--br2);
+        }
+
+    .team-rank {
+        font-family: 'Barlow Condensed', sans-serif;
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--mu);
+        width: 24px;
+        text-align: center;
+        flex-shrink: 0;
+    }
+
+    .team-body {
+        flex: 1;
+    }
+
+    .team-name {
+        font-size: 15px;
+        font-weight: 500;
+        color: var(--tx);
+        margin-bottom: 3px;
+    }
+
+    .team-meta {
+        font-size: 12px;
+        color: var(--mu);
+    }
+
+    .team-code {
+        font-family: 'Barlow Condensed', sans-serif;
+        letter-spacing: 1px;
+        color: var(--o);
+    }
+
+    .team-score {
+        text-align: right;
+        flex-shrink: 0;
+    }
+
+    .team-score-val {
+        font-family: 'Barlow Condensed', sans-serif;
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--tx);
+        line-height: 1;
+    }
+
+    .team-score-label {
+        font-size: 10px;
+        color: var(--mu);
+    }
+
+    .team-arrow {
+        font-size: 16px;
+        color: var(--mu);
+        flex-shrink: 0;
+    }
+</style>

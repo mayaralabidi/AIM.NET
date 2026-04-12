@@ -17,7 +17,7 @@ namespace aim.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.0")
+                .HasAnnotation("ProductVersion", "8.0.23")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -35,6 +35,10 @@ namespace aim.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("IconPath")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Key")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -107,6 +111,34 @@ namespace aim.Migrations
                     b.ToTable("ChallengeTasks");
                 });
 
+            modelBuilder.Entity("aim.Models.Notification", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("ParticipantId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("SentAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ParticipantId");
+
+                    b.ToTable("Notification");
+                });
+
             modelBuilder.Entity("aim.Models.Participant", b =>
                 {
                     b.Property<int>("Id")
@@ -114,6 +146,9 @@ namespace aim.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("BestStreak")
+                        .HasColumnType("int");
 
                     b.Property<int>("CurrentStreak")
                         .ValueGeneratedOnAdd()
@@ -123,7 +158,7 @@ namespace aim.Migrations
                     b.Property<string>("Email")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<DateTime>("LastActivityDate")
+                    b.Property<DateTime?>("LastActivityDate")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("Name")
@@ -157,7 +192,11 @@ namespace aim.Migrations
                     b.Property<int>("BadgeId")
                         .HasColumnType("int");
 
-                    b.Property<DateTime>("DateUnlocked")
+                    b.Property<string>("BadgeKey")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("EarnedAt")
                         .HasColumnType("datetime2");
 
                     b.Property<int>("ParticipantId")
@@ -204,6 +243,40 @@ namespace aim.Migrations
                     b.ToTable("Participation");
                 });
 
+            modelBuilder.Entity("aim.Models.PersonalGoal", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<double>("CurrentValue")
+                        .HasColumnType("float");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsReached")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("ParticipantId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("TargetDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<double>("TargetValue")
+                        .HasColumnType("float");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ParticipantId");
+
+                    b.ToTable("PersonalGoal");
+                });
+
             modelBuilder.Entity("aim.Models.TaskCompletion", b =>
                 {
                     b.Property<int>("Id")
@@ -219,6 +292,9 @@ namespace aim.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<int>("ParticipantId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PointsEarned")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
@@ -286,6 +362,17 @@ namespace aim.Migrations
                     b.Navigation("Challenge");
                 });
 
+            modelBuilder.Entity("aim.Models.Notification", b =>
+                {
+                    b.HasOne("aim.Models.Participant", "Participant")
+                        .WithMany()
+                        .HasForeignKey("ParticipantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Participant");
+                });
+
             modelBuilder.Entity("aim.Models.Participant", b =>
                 {
                     b.HasOne("aim.Models.Team", "Team")
@@ -330,6 +417,17 @@ namespace aim.Migrations
                         .IsRequired();
 
                     b.Navigation("Challenge");
+
+                    b.Navigation("Participant");
+                });
+
+            modelBuilder.Entity("aim.Models.PersonalGoal", b =>
+                {
+                    b.HasOne("aim.Models.Participant", "Participant")
+                        .WithMany()
+                        .HasForeignKey("ParticipantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Participant");
                 });

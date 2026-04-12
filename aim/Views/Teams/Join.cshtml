@@ -1,0 +1,186 @@
+﻿@{
+    ViewData["Title"] = "Join a Team";
+}
+
+<div class="join-wrap">
+    <a asp-action="Index" class="back-link">← All teams</a>
+
+    <div class="join-card">
+        <div class="join-icon">⚡</div>
+        <h1 class="join-title">Join a <span>Squad</span></h1>
+        <p class="join-sub">Enter your team's invite code to compete together.</p>
+
+        @if (ViewBag.Error != null)
+        {
+            <div class="join-error">@ViewBag.Error</div>
+        }
+
+        <form asp-action="Join" method="post">
+            @Html.AntiForgeryToken()
+            <input type="text"
+                   name="inviteCode"
+                   class="join-input"
+                   placeholder="e.g. ALP-8X2"
+                   maxlength="20"
+                   autocomplete="off"
+                   autofocus />
+            <button type="submit" class="join-btn">Join Squad</button>
+        </form>
+
+        <div class="join-divider">or</div>
+
+        <a asp-action="Index" class="join-browse">Browse all teams →</a>
+    </div>
+</div>
+
+<style>
+    .join-wrap {
+        min-height: calc(100vh - 56px);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 20px;
+    }
+
+    .back-link {
+        position: absolute;
+        top: 72px;
+        left: 24px;
+        font-size: 12px;
+        color: var(--mu);
+        transition: color .15s;
+    }
+
+        .back-link:hover {
+            color: var(--tx);
+        }
+
+    .join-card {
+        background: var(--cd);
+        border: 0.5px solid var(--br);
+        border-radius: 16px;
+        padding: 40px 36px;
+        width: 100%;
+        max-width: 400px;
+        text-align: center;
+    }
+
+    .join-icon {
+        font-size: 36px;
+        margin-bottom: 16px;
+    }
+
+    .join-title {
+        font-family: 'Barlow Condensed', sans-serif;
+        font-size: 36px;
+        font-weight: 700;
+        margin-bottom: 8px;
+        color: var(--tx);
+    }
+
+        .join-title span {
+            color: var(--o);
+        }
+
+    .join-sub {
+        font-size: 13px;
+        color: var(--mu);
+        margin-bottom: 28px;
+        line-height: 1.5;
+    }
+
+    .join-error {
+        background: rgba(226,75,74,0.1);
+        border: 0.5px solid rgba(226,75,74,0.3);
+        border-radius: 8px;
+        padding: 10px 14px;
+        font-size: 13px;
+        color: #F09595;
+        margin-bottom: 16px;
+    }
+
+    .join-input {
+        width: 100%;
+        background: var(--sf);
+        border: 0.5px solid var(--br2);
+        border-radius: 10px;
+        padding: 12px 16px;
+        font-size: 16px;
+        font-weight: 500;
+        color: var(--tx);
+        text-align: center;
+        letter-spacing: 2px;
+        font-family: 'Barlow Condensed', sans-serif;
+        margin-bottom: 12px;
+        outline: none;
+        transition: border-color .15s;
+    }
+
+        .join-input:focus {
+            border-color: var(--o);
+        }
+
+        .join-input::placeholder {
+            color: var(--mu);
+            letter-spacing: 1px;
+            font-size: 14px;
+        }
+
+    .join-btn {
+        width: 100%;
+        background: var(--o);
+        color: #1a0e00;
+        border: none;
+        border-radius: 10px;
+        padding: 12px;
+        font-size: 15px;
+        font-weight: 700;
+        font-family: 'Barlow Condensed', sans-serif;
+        letter-spacing: 1px;
+        cursor: pointer;
+        transition: opacity .15s, transform .1s;
+    }
+
+        .join-btn:hover {
+            opacity: .88;
+        }
+
+        .join-btn:active {
+            transform: scale(.98);
+        }
+
+    .join-divider {
+        font-size: 12px;
+        color: var(--mu);
+        margin: 20px 0;
+        position: relative;
+    }
+
+        .join-divider::before, .join-divider::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            width: 40%;
+            height: 0.5px;
+            background: var(--br2);
+        }
+
+        .join-divider::before {
+            left: 0;
+        }
+
+        .join-divider::after {
+            right: 0;
+        }
+
+    .join-browse {
+        font-size: 13px;
+        color: var(--mu);
+        transition: color .15s;
+    }
+
+        .join-browse:hover {
+            color: var(--tx);
+        }
+</style>

@@ -1,59 +1,125 @@
 ﻿@model IEnumerable<aim.Models.Challenge>
-
 @{
-    ViewData["Title"] = "Index";
+    ViewData["Title"] = "Challenges";
 }
 
-<h1>Index</h1>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
 
-<p>
-    <a asp-action="Create">Create New</a>
-</p>
-<table class="table">
-    <thead>
-        <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.Title)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Description)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.PointsReward)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.StartDate)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.EndDate)
-            </th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-@foreach (var item in Model) {
-        <tr>
-            <td>
-                @Html.DisplayFor(modelItem => item.Title)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Description)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.PointsReward)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.StartDate)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.EndDate)
-            </td>
-            <td>
-                <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
-                <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
-                <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>
-            </td>
-        </tr>
-}
-    </tbody>
-</table>
+<style>
+    .cl-wrap {
+        background: #111110;
+        min-height: 100vh;
+        padding: 28px 20px 80px;
+        font-family: 'DM Sans',sans-serif;
+        color: #f0ede8;
+        max-width: 780px;
+        margin: 0 auto;
+    }
+
+    .cl-heading {
+        font-family: 'Barlow Condensed',sans-serif;
+        font-size: 32px;
+        font-weight: 700;
+        margin-bottom: 24px;
+    }
+
+        .cl-heading span {
+            color: #EF9F27;
+        }
+
+    .ch-card {
+        background: #222120;
+        border: 0.5px solid rgba(255,255,255,.08);
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        text-decoration: none;
+        transition: border-color .2s;
+    }
+
+        .ch-card:hover {
+            border-color: rgba(255,255,255,.2);
+        }
+
+    .ch-card-body {
+        flex: 1;
+    }
+
+    .ch-card-title {
+        font-size: 16px;
+        font-weight: 500;
+        color: #f0ede8;
+        margin-bottom: 4px;
+    }
+
+    .ch-card-meta {
+        font-size: 12px;
+        color: #888780;
+    }
+
+    .ch-card-pts {
+        font-family: 'Barlow Condensed',sans-serif;
+        font-size: 20px;
+        font-weight: 700;
+        color: #EF9F27;
+        white-space: nowrap;
+    }
+
+    .ch-arrow {
+        font-size: 18px;
+        color: #888780;
+    }
+
+    .empty {
+        text-align: center;
+        padding: 60px 20px;
+        color: #888780;
+        font-size: 14px;
+    }
+
+        .empty strong {
+            display: block;
+            font-size: 18px;
+            color: #f0ede8;
+            margin-bottom: 8px;
+        }
+</style>
+
+<div class="cl-wrap">
+    <div class="cl-heading">Active <span>Challenges</span></div>
+
+    @if (!Model.Any())
+    {
+        <div class="empty">
+            <strong>No challenges yet</strong>
+            Check back soon or ask your admin to add some.
+        </div>
+    }
+    else
+    {
+        foreach (var c in Model)
+        {
+            <a asp-action="Details" asp-route-id="@c.Id" class="ch-card">
+                <div class="ch-card-body">
+                    <div class="ch-card-title">@c.Title</div>
+                    <div class="ch-card-meta">
+                        @if (c.EndDate != default(DateTime))
+                        {
+                            var d = Math.Max(0, (c.EndDate - DateTime.UtcNow).Days);
+                            <span>@(d == 0 ? "Last day" : $"{d} days left")</span>
+                        }
+                        @if (!string.IsNullOrEmpty(c.Description))
+                        {
+                            <span> · @c.Description</span>
+                        }
+                    </div>
+                </div>
+                <span class="ch-card-pts">@c.PointsReward pts</span>
+                <span class="ch-arrow">→</span>
+            </a>
+        }
+    }
+</div>

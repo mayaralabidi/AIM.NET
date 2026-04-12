@@ -28,17 +28,28 @@ namespace aim.Controllers
         // GET: Challenges/Details/5
         public async Task<IActionResult> Details(int? id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
+            if (id == null) return NotFound();
 
             var challenge = await _context.Challenges
+                .Include(c => c.Tasks)
                 .FirstOrDefaultAsync(m => m.Id == id);
-            if (challenge == null)
-            {
-                return NotFound();
-            }
+
+            if (challenge == null) return NotFound();
+
+            // Pass completed task IDs for today so the view can disable done buttons
+            var participant = await _context.Participants.FirstOrDefaultAsync();
+            var today = DateTime.UtcNow.Date;
+
+            var completedTodayIds = participant != null
+                ? await _context.TaskCompletions
+                    .Where(tc => tc.ParticipantId == participant.Id && tc.CompletedAt.Date == today)
+                    .Select(tc => tc.ChallengeTaskId)
+                    .ToListAsync()
+                : new List<int>();
+
+            ViewBag.CompletedTodayIds = completedTodayIds;
+            ViewBag.ParticipantScore = participant?.TotalScore ?? 0;
+            ViewBag.ParticipantStreak = participant?.CurrentStreak ?? 0;
 
             return View(challenge);
         }

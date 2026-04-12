@@ -16,8 +16,9 @@ namespace aim.Models
         public int TotalScore { get; set; } = 0;
 
         public int CurrentStreak { get; set; } = 0;
+        public int BestStreak { get; set; }
 
-        public DateTime LastActivityDate { get; set; } = DateTime.Now;
+        public DateTime? LastActivityDate { get; set; }
 
         public int? TeamId { get; set; }
         public virtual Team? Team { get; set; }

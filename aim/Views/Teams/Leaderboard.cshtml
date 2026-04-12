@@ -1,0 +1,318 @@
+﻿@model aim.Models.Team
+@{
+    ViewData["Title"] = Model.Name + " — Leaderboard";
+    int currentId = ViewBag.CurrentParticipantId;
+}
+
+<div class="lb-wrap">
+
+    <a asp-action="Index" class="back-link">← All teams</a>
+
+    <div class="lb-hero">
+        <div class="lb-team-name">@Model.Name</div>
+        <div class="lb-invite">
+            Invite code:
+            <span class="invite-code">@Model.InviteCode</span>
+        </div>
+    </div>
+
+    <div class="lb-stats">
+        <div class="lb-stat">
+            <strong>@Model.Members.Count</strong>
+            Members
+        </div>
+        <div class="lb-stat">
+            <strong>@Model.Members.Sum(p => p.TotalScore).ToString("N0")</strong>
+            Team score
+        </div>
+        <div class="lb-stat">
+            <strong>@(Model.Members.Any() ? Model.Members.Max(p => p.CurrentStreak) : 0)</strong>
+            Top streak
+        </div>
+    </div>
+
+    <div class="lb-table">
+        @if (!Model.Members.Any())
+        {
+            <div class="lb-empty">
+                <strong>No members yet</strong>
+                Share the invite code to get your squad going.
+            </div>
+        }
+        else
+        {
+            int rank = 1;
+            foreach (var p in Model.Members)
+            {
+                bool isYou = p.Id == currentId;
+                <div class="lb-row @(isYou ? "lb-you" : "") @(rank == 1 ? "lb-first" : "")">
+                    <div class="lb-rank @(rank == 1 ? "gold" : rank == 2 ? "silver" : rank == 3 ? "bronze" : "")">
+                        @(rank <= 3 ? "" : rank.ToString())
+                        @if (rank == 1)
+                        {
+                            <span>🥇</span>
+                        }
+                        else if (rank == 2)
+                        {
+
+                            <span>🥈</span>
+                        }
+                        else if (rank == 3)
+                        {
+
+                            <span>🥉</span>
+                        }
+                    </div>
+
+                    <div class="lb-avatar">
+                        @string.Concat(p.Name.Split(' ').Take(2).Select(w => w[0])).ToUpper()
+                    </div>
+
+                    <div class="lb-info">
+                        <div class="lb-name">
+                            @p.Name
+                            @if (isYou)
+                            {
+                                <span class="you-tag">you</span>
+                            }
+                        </div>
+                        <div class="lb-meta">
+                            @if (p.CurrentStreak > 0)
+                            {
+                                <span class="streak-tag">🔥 @p.CurrentStreak day streak</span>
+                            }
+                            else
+                            {
+                                <span style="color:var(--mu)">No active streak</span>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="lb-score-col">
+                        <div class="lb-score-val">@p.TotalScore.ToString("N0")</div>
+                        <div class="lb-score-label">pts</div>
+                    </div>
+                </div>
+                rank++;
+            }
+        }
+    </div>
+
+    <div style="text-align:center;margin-top:24px;">
+        <a asp-action="Join" class="invite-btn">+ Invite someone</a>
+    </div>
+</div>
+
+<style>
+    .lb-wrap {
+        max-width: 680px;
+        margin: 0 auto;
+        padding: 28px 20px 80px;
+    }
+
+    .back-link {
+        display: inline-block;
+        font-size: 12px;
+        color: var(--mu);
+        margin-bottom: 24px;
+        transition: color .15s;
+    }
+
+        .back-link:hover {
+            color: var(--tx);
+        }
+
+    .lb-hero {
+        margin-bottom: 20px;
+    }
+
+    .lb-team-name {
+        font-family: 'Barlow Condensed', sans-serif;
+        font-size: 38px;
+        font-weight: 700;
+        line-height: 1;
+        margin-bottom: 8px;
+    }
+
+    .lb-invite {
+        font-size: 12px;
+        color: var(--mu);
+    }
+
+    .invite-code {
+        font-family: 'Barlow Condensed', sans-serif;
+        font-size: 14px;
+        letter-spacing: 1px;
+        background: var(--cd);
+        border: 0.5px solid var(--br2);
+        border-radius: 6px;
+        padding: 2px 10px;
+        color: var(--o);
+        margin-left: 4px;
+    }
+
+    .lb-stats {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 24px;
+        flex-wrap: wrap;
+    }
+
+    .lb-stat {
+        background: var(--cd);
+        border: 0.5px solid var(--br);
+        border-radius: 10px;
+        padding: 10px 16px;
+        font-size: 12px;
+        color: var(--mu);
+        flex: 1;
+        min-width: 100px;
+    }
+
+        .lb-stat strong {
+            display: block;
+            font-family: 'Barlow Condensed', sans-serif;
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--tx);
+            line-height: 1;
+            margin-bottom: 3px;
+        }
+
+    .lb-table {
+        background: var(--cd);
+        border: 0.5px solid var(--br);
+        border-radius: 14px;
+        overflow: hidden;
+    }
+
+    .lb-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 18px;
+        border-bottom: 0.5px solid var(--br);
+        transition: background .15s;
+    }
+
+        .lb-row:last-child {
+            border-bottom: none;
+        }
+
+        .lb-row:hover {
+            background: rgba(255,255,255,0.03);
+        }
+
+    .lb-you {
+        background: rgba(239,159,39,0.06);
+        border-left: 2px solid var(--o);
+    }
+
+    .lb-first {
+        background: rgba(239,159,39,0.04);
+    }
+
+    .lb-rank {
+        font-family: 'Barlow Condensed', sans-serif;
+        font-size: 16px;
+        font-weight: 700;
+        width: 28px;
+        text-align: center;
+        color: var(--mu);
+        flex-shrink: 0;
+    }
+
+    .lb-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: rgba(239,159,39,0.15);
+        color: var(--o);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: 700;
+        flex-shrink: 0;
+    }
+
+    .lb-info {
+        flex: 1;
+    }
+
+    .lb-name {
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--tx);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .lb-meta {
+        font-size: 11px;
+        color: var(--mu);
+        margin-top: 2px;
+    }
+
+    .you-tag {
+        font-size: 10px;
+        font-weight: 500;
+        background: rgba(239,159,39,0.15);
+        color: var(--o);
+        border-radius: 999px;
+        padding: 2px 7px;
+    }
+
+    .streak-tag {
+        color: var(--o);
+    }
+
+    .lb-score-col {
+        text-align: right;
+        flex-shrink: 0;
+    }
+
+    .lb-score-val {
+        font-family: 'Barlow Condensed', sans-serif;
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--tx);
+        line-height: 1;
+    }
+
+    .lb-score-label {
+        font-size: 10px;
+        color: var(--mu);
+    }
+
+    .lb-empty {
+        padding: 40px 20px;
+        text-align: center;
+        color: var(--mu);
+        font-size: 13px;
+    }
+
+        .lb-empty strong {
+            display: block;
+            font-size: 16px;
+            color: var(--tx);
+            margin-bottom: 6px;
+        }
+
+    .invite-btn {
+        display: inline-block;
+        border: 0.5px solid var(--br2);
+        border-radius: 10px;
+        padding: 10px 20px;
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--mu);
+        transition: color .15s, border-color .15s;
+    }
+
+        .invite-btn:hover {
+            color: var(--tx);
+            border-color: var(--o);
+        }
+</style>
