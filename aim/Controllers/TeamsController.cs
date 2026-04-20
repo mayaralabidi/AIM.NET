@@ -204,7 +204,7 @@ namespace aim.Controllers
 
             if (team == null) return NotFound();
 
-            // Sort members by score descending
+            // Sort by score descending
             team.Members = team.Members
                 .OrderByDescending(p => p.TotalScore)
                 .ToList();

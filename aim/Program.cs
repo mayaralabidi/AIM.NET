@@ -13,6 +13,7 @@ builder.Services.AddScoped<BadgeService>();
 builder.Services.AddScoped<TaskCompletionService>();
 
 var app = builder.Build();
+app.UseDeveloperExceptionPage();
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

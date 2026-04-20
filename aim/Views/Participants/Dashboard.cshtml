@@ -1,0 +1,294 @@
+﻿@model aim.Models.Participant
+@{
+    ViewData["Title"] = "Dashboard";
+    var calendar = ViewBag.StreakCalendar as IEnumerable<dynamic> ?? new List<dynamic>();
+    var progresses = ViewBag.ChallengeProgresses as IEnumerable<dynamic> ?? new List<dynamic>();
+    var teammates = ViewBag.Teammates as List<aim.Models.Participant> ?? new List<aim.Models.Participant>();
+    int teamRank = (int)(ViewBag.TeamRank ?? 0);
+    bool atRisk = (bool)(ViewBag.StreakAtRisk ?? false);
+    double hrsLeft = (double)(ViewBag.HoursLeft ?? 0.0);
+}
+
+<div class="db-wrap">
+
+    <div class="db-header">
+        <div>
+            <div class="db-greeting">Welcome back,</div>
+            <div class="db-name">@Model.Name</div>
+        </div>
+        <div class="db-header-right">
+            @if (Model.Team != null)
+            {
+                <div class="team-pill">
+                    <span class="team-pill-name">@Model.Team.Name</span>
+                    <span class="team-pill-code">@Model.Team.InviteCode</span>
+                </div>
+            }
+        </div>
+    </div>
+
+    @if (atRisk)
+    {
+        <div class="risk-banner">
+            <div>
+                <div class="risk-title">Streak ending in @hrsLeft h</div>
+                <div class="risk-sub">Complete any task to keep your @Model.CurrentStreak-day run alive</div>
+            </div>
+            <a asp-controller="Challenges" asp-action="Index" class="risk-btn">Go now</a>
+        </div>
+    }
+
+    <div class="stat-grid">
+        <div class="stat-card">
+            <div class="stat-accent" style="background:var(--o)"></div>
+            <div class="stat-label">Total score</div>
+            <div class="stat-val">@Model.TotalScore.ToString("N0")</div>
+            <div class="stat-sub">All time</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-accent" style="background:var(--t)"></div>
+            <div class="stat-label">Current streak</div>
+            <div class="stat-val">@Model.CurrentStreak <span class="stat-unit">days</span></div>
+            <div class="stat-sub">Best: @Model.BestStreak days</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-accent" style="background:var(--p)"></div>
+            <div class="stat-label">Team rank</div>
+            <div class="stat-val">
+                @if (teamRank > 0)
+                {
+                    <text>#@teamRank</text>
+                }
+                else
+                {
+
+                    <text>—</text>
+                }
+            </div>
+            <div class="stat-sub">
+                @if (Model.Team != null)
+                {
+                    <text>in @Model.Team.Name</text>
+                }
+                else
+                {
+
+                    <text>No team yet</text>
+                }
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-accent" style="background:var(--r)"></div>
+            <div class="stat-label">This month</div>
+            <div class="stat-val">@ViewBag.TasksThisMonth</div>
+            <div class="stat-sub">tasks completed</div>
+        </div>
+    </div>
+
+    <div class="main-grid">
+
+        <div class="panel">
+            <div class="panel-title">Active challenges</div>
+            @if (!progresses.Any())
+            {
+                <div class="empty-state">
+                    <div class="empty-icon">🎯</div>
+                    <strong>No active challenges</strong>
+                    <p>Join a challenge to start earning points.</p>
+                    <a asp-controller="Challenges" asp-action="Index" class="empty-cta">Browse challenges</a>
+                </div>
+            }
+            else
+            {
+                foreach (var c in progresses)
+                {
+                    int pct = c.TotalTasks == 0 ? 0 : (int)Math.Round((double)c.CompletedTasks / c.TotalTasks * 100);
+                    string urgentClass = c.DaysLeft <= 2 ? "urgent" : "";
+                    string daysText = c.DaysLeft == 0 ? "Last day" : c.DaysLeft + "d left";
+                    <a asp-controller="Challenges" asp-action="Details" asp-route-id="@c.ChallengeId" class="ch-prog-card">
+                        <div class="ch-prog-row">
+                            <div class="ch-prog-title">@c.Title</div>
+                            @if (c.DaysLeft >= 0)
+                            {
+                                <span class="days-pill @urgentClass">@daysText</span>
+                            }
+                        </div>
+                        <div class="prog-track">
+                            <div class="prog-fill" style="width:@(pct)%"></div>
+                        </div>
+                        <div class="ch-prog-footer">
+                            <span class="ch-prog-meta">@c.CompletedTasks / @c.TotalTasks tasks</span>
+                            <span class="ch-prog-pct">@pct%</span>
+                        </div>
+                    </a>
+                }
+                <a asp-controller="Challenges" asp-action="Index" class="browse-more">+ Browse more challenges</a>
+            }
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:14px;">
+            <div class="panel">
+                <div class="panel-title">Streak</div>
+                <div class="streak-big">@Model.CurrentStreak <span class="streak-big-unit">days</span></div>
+                <div class="streak-best">Personal best: @Model.BestStreak days</div>
+                <div class="streak-day-labels">
+                    @foreach (var l in new[] { "M", "T", "W", "T", "F", "S", "S" })
+                    {
+                        <div class="sdl">@l</div>
+                    }
+                </div>
+                <div class="streak-grid">
+                    @foreach (var day in calendar)
+                    {
+                        string cls = day.IsToday ? "today" : (day.HasActivity ? "active" : "");
+                        <div class="sc @cls"></div>
+                    }
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">Badges</div>
+                @if (!Model.ParticipantBadges.Any())
+                {
+                    <div style="font-size:12px;color:var(--mu);text-align:center;padding:12px 0;">
+                        Complete tasks to unlock badges.
+                    </div>
+                }
+                else
+                {
+                    <div class="badge-preview-grid">
+                        @foreach (var pb in Model.ParticipantBadges.Take(6))
+                        {
+                            <div class="badge-cell">
+                                <div class="badge-fallback">🏅</div>
+                                <div class="badge-cell-name">@pb.Badge.Name</div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="panel" style="margin-top:14px;">
+        <div class="panel-title">
+            @(Model.Team != null ? Model.Team.Name : "Leaderboard")
+            @if (Model.Team != null)
+            {
+                <a asp-controller="Teams" asp-action="Leaderboard" asp-route-id="@Model.TeamId"
+                   style="font-size:11px;color:var(--mu);margin-left:auto;">Full leaderboard →</a>
+            }
+        </div>
+        @if (!teammates.Any())
+        {
+            <div class="empty-state">
+                <div class="empty-icon">👥</div>
+                <strong>No team yet</strong>
+                <p>Join a squad to compete with friends.</p>
+                <a asp-controller="Teams" asp-action="Join" class="empty-cta">Join a team</a>
+            </div>
+        }
+        else
+        {
+            <div class="lb-mini">
+                @{
+                    int rank = 1;
+                }
+                @foreach (var p in teammates)
+                {
+                    bool isYou = p.Id == Model.Id;
+                    string rowClass = isYou ? "lb-mini-row lb-you" : "lb-mini-row";
+                    string rankClass = rank == 1 ? "lb-mini-rank gold" : "lb-mini-rank";
+                    string initials = string.Concat(p.Name.Split(' ').Take(2).Select(w => w[0])).ToUpper();
+                    <div class="@rowClass">
+                        <span class="@rankClass">@rank</span>
+                        <div class="lb-mini-avatar">@initials</div>
+                        <span class="lb-mini-name">
+                            @p.Name
+                            @if (isYou)
+                            {
+                                <span class="you-tag">you</span>
+                            }
+                        </span>
+                        @if (p.CurrentStreak > 0)
+                        {
+                            <span class="lb-mini-streak">🔥 @p.CurrentStreak</span>
+                        }
+                        <span class="lb-mini-score">@p.TotalScore.ToString("N0")</span>
+                    </div>
+                    rank++;
+                }
+            </div>
+        }
+    </div>
+
+</div>
+
+<style>
+    .db-wrap { max-width:860px; margin:0 auto; padding:28px 20px 80px; }
+    .db-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:24px; flex-wrap:wrap; gap:12px; }
+    .db-greeting { font-size:13px; color:var(--mu); margin-bottom:2px; }
+    .db-name { font-family:'Barlow Condensed',sans-serif; font-size:32px; font-weight:700; line-height:1; }
+    .db-header-right { display:flex; align-items:center; gap:10px; }
+    .team-pill { background:var(--cd); border:0.5px solid var(--br); border-radius:999px; padding:6px 14px; display:flex; align-items:center; gap:8px; font-size:12px; }
+    .team-pill-name { color:var(--mu); }
+    .team-pill-code { font-family:'Barlow Condensed',sans-serif; letter-spacing:1px; color:var(--o); font-size:13px; }
+    .risk-banner { background:#1a1100; border:0.5px solid var(--o2); border-radius:10px; padding:14px 18px; display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:20px; }
+    .risk-title { font-size:13px; font-weight:500; color:var(--o); }
+    .risk-sub { font-size:11px; color:var(--o2); margin-top:2px; }
+    .risk-btn { background:var(--o); color:#1a0e00; border-radius:8px; padding:8px 16px; font-size:13px; font-weight:700; font-family:'Barlow Condensed',sans-serif; white-space:nowrap; }
+    .stat-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-bottom:16px; }
+    .stat-card { background:var(--cd); border:0.5px solid var(--br); border-radius:12px; padding:16px 18px; position:relative; overflow:hidden; }
+    .stat-accent { position:absolute; top:0; left:0; width:100%; height:2px; }
+    .stat-label { font-size:10px; font-weight:500; letter-spacing:.1em; text-transform:uppercase; color:var(--mu); margin-bottom:8px; }
+    .stat-val { font-family:'Barlow Condensed',sans-serif; font-size:36px; font-weight:700; line-height:1; }
+    .stat-unit { font-size:16px; font-weight:400; }
+    .stat-sub { font-size:11px; color:var(--mu); margin-top:5px; }
+    .main-grid { display:grid; grid-template-columns:minmax(0,1.4fr) minmax(0,1fr); gap:14px; }
+    .panel { background:var(--cd); border:0.5px solid var(--br); border-radius:12px; padding:20px; }
+    .panel-title { font-family:'Barlow Condensed',sans-serif; font-size:12px; font-weight:500; letter-spacing:.12em; text-transform:uppercase; color:var(--mu); margin-bottom:16px; display:flex; align-items:center; }
+    .ch-prog-card { display:block; border:0.5px solid var(--br); border-radius:10px; padding:14px 16px; margin-bottom:10px; text-decoration:none; transition:border-color .2s; }
+    .ch-prog-card:hover { border-color:rgba(255,255,255,.18); }
+    .ch-prog-row { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px; }
+    .ch-prog-title { font-size:14px; font-weight:500; color:var(--tx); }
+    .days-pill { font-size:10px; font-weight:500; padding:2px 8px; border-radius:999px; background:rgba(255,255,255,.06); color:var(--mu); white-space:nowrap; }
+    .days-pill.urgent { background:rgba(226,75,74,.12); color:#F09595; }
+    .prog-track { height:4px; background:rgba(255,255,255,.08); border-radius:2px; overflow:hidden; }
+    .prog-fill { height:100%; border-radius:2px; background:var(--t); transition:width .6s cubic-bezier(.4,0,.2,1); }
+    .ch-prog-footer { display:flex; justify-content:space-between; margin-top:5px; }
+    .ch-prog-meta { font-size:11px; color:var(--mu); }
+    .ch-prog-pct { font-size:11px; color:var(--mu); }
+    .browse-more { display:block; text-align:center; margin-top:10px; font-size:12px; color:var(--mu); }
+    .streak-big { font-family:'Barlow Condensed',sans-serif; font-size:60px; font-weight:700; line-height:1; color:var(--o); }
+    .streak-big-unit { font-size:18px; font-weight:400; color:var(--mu); margin-left:4px; }
+    .streak-best { font-size:11px; color:var(--mu); margin-top:4px; margin-bottom:16px; }
+    .streak-day-labels { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; margin-bottom:3px; }
+    .sdl { font-size:9px; text-align:center; color:var(--mu); }
+    .streak-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; }
+    .sc { aspect-ratio:1; border-radius:4px; background:rgba(255,255,255,.05); }
+    .sc.active { background:var(--t); }
+    .sc.today { background:var(--o); }
+    .badge-preview-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+    .badge-cell { background:rgba(255,255,255,.04); border-radius:10px; padding:10px 6px; text-align:center; }
+    .badge-fallback { font-size:22px; margin-bottom:4px; }
+    .badge-cell-name { font-size:10px; color:var(--mu); line-height:1.3; }
+    .lb-mini-row { display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:0.5px solid var(--br); }
+    .lb-mini-row:last-child { border-bottom:none; }
+    .lb-you { background:rgba(239,159,39,.06); border-radius:8px; padding:9px 10px; margin:4px -10px; }
+    .lb-mini-rank { font-family:'Barlow Condensed',sans-serif; font-size:15px; font-weight:700; width:18px; text-align:center; color:var(--mu); }
+    .lb-mini-rank.gold { color:var(--o); }
+    .lb-mini-avatar { width:28px; height:28px; border-radius:50%; background:rgba(239,159,39,.12); color:var(--o); display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700; flex-shrink:0; }
+    .lb-mini-name { font-size:13px; font-weight:500; flex:1; display:flex; align-items:center; gap:6px; }
+    .lb-mini-streak { font-size:11px; color:var(--o); }
+    .lb-mini-score { font-family:'Barlow Condensed',sans-serif; font-size:16px; font-weight:700; }
+    .you-tag { font-size:10px; font-weight:500; background:rgba(239,159,39,.15); color:var(--o); border-radius:999px; padding:2px 7px; }
+    .empty-state { text-align:center; padding:24px 16px; }
+    .empty-icon { font-size:28px; margin-bottom:8px; }
+    .empty-state strong { display:block; font-size:15px; color:var(--tx); margin-bottom:4px; }
+    .empty-state p { font-size:12px; color:var(--mu); margin-bottom:14px; }
+    .empty-cta { display:inline-block; background:var(--o); color:#1a0e00; border-radius:8px; padding:8px 18px; font-size:13px; font-weight:700; font-family:'Barlow Condensed',sans-serif; }
+    @@media (max-width:640px) {
+        .stat-grid { grid-template-columns:repeat(2,1fr); }
+        .main-grid { grid-template-columns:1fr; }
+    }
+</style>
