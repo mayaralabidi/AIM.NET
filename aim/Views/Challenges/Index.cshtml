@@ -1,4 +1,6 @@
-﻿@model IEnumerable<aim.Models.Challenge>
+﻿
+@model aim.Helpers.PaginatedList<aim.Models.Challenge>
+
 @{
     ViewData["Title"] = "Challenges";
 }
@@ -124,3 +126,19 @@
         }
     }
 </div>
+
+@* Pagination *@
+@if (Model.TotalPages > 1)
+{
+    <div class="pagination">
+        @if (Model.HasPrev)
+        {
+            <a asp-action="Index" asp-route-page="@(Model.PageIndex - 1)" class="pg-btn">← Prev</a>
+        }
+        <span class="pg-info">@Model.PageIndex / @Model.TotalPages</span>
+        @if (Model.HasNext)
+        {
+            <a asp-action="Index" asp-route-page="@(Model.PageIndex + 1)" class="pg-btn">Next →</a>
+        }
+    </div>
+}

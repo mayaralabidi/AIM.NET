@@ -12,23 +12,22 @@ namespace aim.Controllers
         {
             _logger = logger;
         }
-
         public IActionResult Index()
         {
-            // Redirect logged-in users straight to Dashboard
             if (User.Identity?.IsAuthenticated == true)
                 return RedirectToAction("Dashboard", "Participants");
-
             return RedirectToAction("Login", "Auth");
         }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-        public IActionResult Error()
+        public IActionResult Error(int? statusCode = null)
         {
-            return View(new ErrorViewModel
+            var model = new ErrorViewModel
             {
-                RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier
-            });
+                RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier,
+                StatusCode = statusCode ?? 500
+            };
+            return View(model);
         }
     }
 }

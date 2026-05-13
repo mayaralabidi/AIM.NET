@@ -142,6 +142,13 @@ namespace aim.Controllers
                 .FirstOrDefaultAsync(t => t.Id == taskId);
             if (task == null) return NotFound();
 
+            if (task.Challenge == null)
+            {
+                TempData["Toast"] = "Invalid task.";
+                TempData["ToastType"] = "error";
+                return RedirectToAction("Index", "Challenges");
+            }
+
             var now = DateTime.UtcNow;
             var today = DateOnly.FromDateTime(now);
 

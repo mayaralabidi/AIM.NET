@@ -1,5 +1,6 @@
 ﻿using aim.Data;
 using aim.Extensions;
+using aim.Helpers;
 using aim.Models;
 using aim.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -168,20 +169,20 @@ namespace aim.Controllers
         }
 
         // GET: Notifications/Feed
-        public async Task<IActionResult> Feed()
+        public async Task<IActionResult> Feed(int page = 1)
         {
             var participant = await this.GetCurrentParticipantAsync(_userManager, _context);
             if (participant == null) return RedirectToAction("Login", "Auth");
 
-            var notifications = await _context.Notification
+            var query = _context.Notification
                 .Where(n => n.ParticipantId == participant.Id)
-                .OrderByDescending(n => n.SentAt)
-                .Take(50)
-                .ToListAsync();
+                .OrderByDescending(n => n.SentAt);
+
+            var paged = await PaginatedList<Notification>.CreateAsync(query, page, 20);
 
             await _notificationService.MarkAllReadAsync(participant.Id);
 
-            return View(notifications);
+            return View(paged);
         }
 
         // POST: Notifications/MarkRead

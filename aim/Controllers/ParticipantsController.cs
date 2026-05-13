@@ -1,11 +1,13 @@
 ﻿using aim.Data;
 using aim.Extensions;
 using aim.Models;
+using aim.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace aim.Controllers
 {
@@ -14,11 +16,14 @@ namespace aim.Controllers
     {
         private readonly AimDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly IParticipantService _participantService;
 
-        public ParticipantsController(AimDbContext context, UserManager<ApplicationUser> userManager)
+        public ParticipantsController(AimDbContext context, UserManager<ApplicationUser> userManager,
+                               IParticipantService participantService)
         {
             _context = context;
             _userManager = userManager;
+            _participantService = participantService;
         }
 
         public async Task<IActionResult> Index()
@@ -118,6 +123,8 @@ namespace aim.Controllers
             var participant = await this.GetCurrentParticipantAsync(_userManager, _context);
             if (participant == null) return RedirectToAction("Login", "Auth");
 
+            var data = await _participantService.GetDashboardDataAsync(participant.Id);
+
             participant = await _context.Participants
                 .Include(p => p.Team)
                 .FirstOrDefaultAsync(p => p.Id == participant.Id);
@@ -191,8 +198,8 @@ namespace aim.Controllers
 
             participant.ParticipantBadges = badges;
 
-            ViewBag.Teammates = teammates;
-            ViewBag.TeamRank = teamRank;
+            //ViewBag.Teammates = teammates;
+            //ViewBag.TeamRank = teamRank;
             ViewBag.TasksThisMonth = completions.Count(tc => tc.CompletedAt >= monthStart);
             ViewBag.StreakAtRisk = participant.CurrentStreak > 0
                 && participant.LastActivityDate.HasValue
@@ -200,6 +207,14 @@ namespace aim.Controllers
             ViewBag.HoursLeft = participant.LastActivityDate.HasValue
                 ? Math.Max(0, Math.Ceiling(24 - (now - participant.LastActivityDate.Value).TotalHours))
                 : 0;
+
+            ViewBag.StreakCalendar = data.StreakCalendar;
+            ViewBag.ChallengeProgresses = data.ChallengeProgresses;
+            ViewBag.Teammates = data.Teammates;
+            ViewBag.TeamRank = data.TeamRank;
+            ViewBag.TasksThisMonth = data.TasksThisMonth;
+            ViewBag.StreakAtRisk = data.StreakAtRisk;
+            ViewBag.HoursLeft = data.HoursLeft;
 
             return View(participant);
         }

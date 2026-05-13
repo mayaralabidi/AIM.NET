@@ -417,9 +417,7 @@
                 bool done = completedIds.Contains(t.Id);
                 <div class="task-card @(done ? "done" : "")">
                     <div class="task-body">
-                        <div class="task-title">
-                            @t.Title
-                        </div>
+                        <div class="task-title">@t.Title</div>
                         @if (!string.IsNullOrEmpty(t.Description))
                         {
                             <div class="task-desc">@t.Description</div>
@@ -430,22 +428,17 @@
                     {
                         <div class="done-check">✓</div>
                     }
+                    else if (ViewBag.IsExpired == true)
+                    {
+                        <span class="badge-expired">Challenge Ended</span>
+                    }
                     else
                     {
-                        @if (ViewBag.IsExpired == true)
-                        {
-                            <span class="badge-expired">Challenge Ended</span>
-                        }
-                        else
-                        {
-                            <form method="post" asp-action="Complete" asp-controller="TaskCompletions">
-                                @Html.AntiForgeryToken()
-                                <input type="hidden" name="taskId" value="@task.Id" />
-                                <button type="submit" class="btn-complete @(completedToday ? "done" : "")">
-                                    @(completedToday ? "✓ Done" : "Complete")
-                                </button>
-                            </form>
-                        }
+                        <form method="post" asp-action="Complete" asp-controller="TaskCompletions" data-complete>
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="taskId" value="@t.Id" />
+                            <button type="submit" class="btn-complete">Complete</button>
+                        </form>
                     }
                 </div>
             }

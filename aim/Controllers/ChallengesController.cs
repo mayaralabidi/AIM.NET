@@ -1,10 +1,12 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using aim.Data;
+using aim.Extensions;
+using aim.Helpers;
+using aim.Models;
+using aim.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using aim.Data;
-using aim.Extensions;
-using aim.Models;
 
 namespace aim.Controllers
 {
@@ -13,43 +15,42 @@ namespace aim.Controllers
     {
         private readonly AimDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly IChallengeService _challengeService;
 
         public ChallengesController(AimDbContext context,
-                                     UserManager<ApplicationUser> userManager)
+                                     UserManager<ApplicationUser> userManager, IChallengeService challengeService)
         {
             _context = context;
             _userManager = userManager;
+            _challengeService = challengeService;
         }
 
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(int page = 1)
         {
-            return View(await _context.Challenges.ToListAsync());
+            var query = _context.Challenges
+                .OrderByDescending(c => c.StartDate)
+                .AsQueryable();
+
+            var paged = await PaginatedList<Challenge>.CreateAsync(query, page, 10);
+            return View(paged);
         }
 
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null) return NotFound();
 
-            var challenge = await _context.Challenges
-                .Include(c => c.Tasks)
-                .FirstOrDefaultAsync(m => m.Id == id);
-
+            var challenge = await _challengeService.GetWithTasksAsync(id.Value);
             if (challenge == null) return NotFound();
 
             var participant = await this.GetCurrentParticipantAsync(_userManager, _context);
             if (participant == null) return RedirectToAction("Login", "Auth");
 
-            var today = DateTime.UtcNow.Date;
-            var completedTodayIds = await _context.TaskCompletions
-                .Where(tc => tc.ParticipantId == participant.Id &&
-                             tc.CompletedAt.Date == today)
-                .Select(tc => tc.ChallengeTaskId)
-                .ToListAsync();
+            var completedTodayIds = await _challengeService.GetCompletedTodayAsync(participant.Id);
 
-            ViewBag.IsExpired = challenge.EndDate != default(DateTime) && challenge.EndDate < DateTime.UtcNow;
             ViewBag.CompletedTodayIds = completedTodayIds;
             ViewBag.ParticipantScore = participant.TotalScore;
             ViewBag.ParticipantStreak = participant.CurrentStreak;
+            ViewBag.IsExpired = challenge.EndDate != default && challenge.EndDate < DateTime.UtcNow;
 
             return View(challenge);
         }

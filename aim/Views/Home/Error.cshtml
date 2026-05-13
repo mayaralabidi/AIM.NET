@@ -1,0 +1,107 @@
+﻿@model aim.Models.ErrorViewModel
+@{
+    ViewData["Title"] = "Error";
+    Layout = null;
+    bool is404 = Model.StatusCode == 404;
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AIM — @(is404 ? "Page not found" : "Something went wrong")</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet" />
+    <style>
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: #111110;
+            color: #f0ede8;
+            font-family: 'DM Sans',sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .wrap {
+            text-align: center;
+            padding: 40px 20px;
+            max-width: 480px;
+        }
+
+        .code {
+            font-family: 'Barlow Condensed',sans-serif;
+            font-size: 120px;
+            font-weight: 800;
+            line-height: 1;
+            color: #EF9F27;
+            opacity: .15;
+        }
+
+        .title {
+            font-family: 'Barlow Condensed',sans-serif;
+            font-size: 36px;
+            font-weight: 700;
+            margin-top: -20px;
+            margin-bottom: 12px;
+        }
+
+        .sub {
+            font-size: 15px;
+            color: #888780;
+            margin-bottom: 32px;
+            line-height: 1.6;
+        }
+
+        .btn {
+            display: inline-block;
+            background: #EF9F27;
+            color: #111110;
+            border-radius: 10px;
+            padding: 12px 28px;
+            font-size: 14px;
+            font-weight: 500;
+            text-decoration: none;
+            transition: opacity .15s;
+        }
+
+            .btn:hover {
+                opacity: .88;
+            }
+
+        .req-id {
+            font-size: 11px;
+            color: #444;
+            margin-top: 24px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <div class="code">@Model.StatusCode</div>
+        <div class="title">@(is404 ? "Page not found" : "Something went wrong")</div>
+        <div class="sub">
+            @if (is404)
+            {
+                <text>The page you're looking for doesn't exist or was moved.</text>
+            }
+            else
+            {
+                <text>An unexpected error occurred. We're on it.</text>
+            }
+        </div>
+        <a href="/" class="btn">Go home</a>
+        @if (Model.ShowRequestId)
+        {
+            <div class="req-id">Request ID: @Model.RequestId</div>
+        }
+    </div>
+</body>
+</html>

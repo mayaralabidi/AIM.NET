@@ -1,5 +1,6 @@
 ﻿using aim.Data;
 using aim.Extensions;
+using aim.Helpers;
 using aim.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -139,24 +140,26 @@ namespace aim.Controllers
         }
 
         // GET: Teams/Leaderboard/5
-        public async Task<IActionResult> Leaderboard(int? id)
+        public async Task<IActionResult> Leaderboard(int? id, int page = 1)
         {
             if (id == null) return NotFound();
 
             var team = await _context.Teams
-                .Include(t => t.Members)
                 .FirstOrDefaultAsync(t => t.Id == id);
-
             if (team == null) return NotFound();
 
-            team.Members = team.Members
-                .OrderByDescending(p => p.TotalScore)
-                .ToList();
+            var query = _context.Participants
+                .Where(p => p.TeamId == id)
+                .OrderByDescending(p => p.TotalScore);
+
+            var paged = await PaginatedList<Participant>.CreateAsync(query, page, 20);
 
             var participant = await this.GetCurrentParticipantAsync(_userManager, _context);
+
+            ViewBag.Team = team;
             ViewBag.CurrentParticipantId = participant?.Id ?? 0;
 
-            return View(team);
+            return View(paged); 
         }
 
         private bool TeamExists(int id) => _context.Teams.Any(e => e.Id == id);
