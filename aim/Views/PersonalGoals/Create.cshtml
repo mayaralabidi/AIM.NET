@@ -1,57 +1,112 @@
-﻿@model aim.Models.PersonalGoal
-
-@{
-    ViewData["Title"] = "Create";
+﻿@{
+    ViewData["Title"] = "New Goal";
 }
 
-<h1>Create</h1>
+<div class="pg-wrap">
+    <a asp-action="Index" class="back-link">← Goals</a>
+    <div class="pg-title" style="margin:16px 0 28px">New <span style="color:var(--o)">Goal</span></div>
 
-<h4>PersonalGoal</h4>
-<hr />
-<div class="row">
-    <div class="col-md-4">
-        <form asp-action="Create">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <div class="form-group">
-                <label asp-for="Description" class="control-label"></label>
-                <input asp-for="Description" class="form-control" />
-                <span asp-validation-for="Description" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="TargetValue" class="control-label"></label>
-                <input asp-for="TargetValue" class="form-control" />
-                <span asp-validation-for="TargetValue" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="CurrentValue" class="control-label"></label>
-                <input asp-for="CurrentValue" class="form-control" />
-                <span asp-validation-for="CurrentValue" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="TargetDate" class="control-label"></label>
-                <input asp-for="TargetDate" class="form-control" />
-                <span asp-validation-for="TargetDate" class="text-danger"></span>
-            </div>
-            <div class="form-group form-check">
-                <label class="form-check-label">
-                    <input class="form-check-input" asp-for="IsReached" /> @Html.DisplayNameFor(model => model.IsReached)
-                </label>
-            </div>
-            <div class="form-group">
-                <label asp-for="ParticipantId" class="control-label"></label>
-                <select asp-for="ParticipantId" class ="form-control" asp-items="ViewBag.ParticipantId"></select>
-            </div>
-            <div class="form-group">
-                <input type="submit" value="Create" class="btn btn-primary" />
-            </div>
-        </form>
-    </div>
+    @if (ViewBag.Error != null)
+    {
+        <div class="form-error">@ViewBag.Error</div>
+    }
+
+    <form method="post" asp-action="Create" class="goal-form">
+        @Html.AntiForgeryToken()
+
+        <div class="field">
+            <label>What's your goal?</label>
+            <input type="text" name="description" placeholder="e.g. Complete 50 tasks" required />
+        </div>
+        <div class="field">
+            <label>Target value</label>
+            <input type="number" name="targetValue" placeholder="e.g. 50" min="1" required />
+        </div>
+        <div class="field">
+            <label>Target date</label>
+            <input type="date" name="targetDate" required
+                   min="@DateTime.UtcNow.ToString("yyyy-MM-dd")" />
+        </div>
+        <button type="submit" class="btn-new" style="width:100%;justify-content:center">Create Goal</button>
+    </form>
 </div>
 
-<div>
-    <a asp-action="Index">Back to List</a>
-</div>
+<style>
+    .pg-wrap {
+        max-width: 480px;
+        margin: 0 auto;
+        padding: 28px 20px 80px;
+    }
 
-@section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
-}
+    .pg-title {
+        font-family: 'Barlow Condensed',sans-serif;
+        font-size: 36px;
+        font-weight: 700;
+        color: var(--tx);
+    }
+
+    .back-link {
+        font-size: 12px;
+        color: var(--mu);
+        transition: color .15s;
+    }
+
+        .back-link:hover {
+            color: var(--tx);
+        }
+
+    .form-error {
+        background: rgba(226,75,74,.12);
+        border: 0.5px solid rgba(226,75,74,.3);
+        border-radius: 8px;
+        padding: 10px 14px;
+        font-size: 13px;
+        color: var(--r);
+        margin-bottom: 16px;
+    }
+
+    .field {
+        margin-bottom: 16px;
+    }
+
+    label {
+        display: block;
+        font-size: 12px;
+        color: var(--mu);
+        margin-bottom: 6px;
+    }
+
+    input[type=text], input[type=number], input[type=date] {
+        width: 100%;
+        background: var(--cd);
+        border: 0.5px solid var(--br);
+        border-radius: 8px;
+        padding: 10px 14px;
+        font-size: 14px;
+        color: var(--tx);
+        font-family: 'DM Sans',sans-serif;
+        outline: none;
+        transition: border-color .15s;
+    }
+
+    input:focus {
+        border-color: var(--o);
+    }
+
+    .btn-new {
+        background: var(--o);
+        color: #111110;
+        border: none;
+        border-radius: 8px;
+        padding: 11px 16px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        display: flex;
+        transition: opacity .15s;
+    }
+
+        .btn-new:hover {
+            opacity: .85;
+        }
+</style>

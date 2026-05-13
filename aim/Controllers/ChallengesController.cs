@@ -46,6 +46,7 @@ namespace aim.Controllers
                 .Select(tc => tc.ChallengeTaskId)
                 .ToListAsync();
 
+            ViewBag.IsExpired = challenge.EndDate != default(DateTime) && challenge.EndDate < DateTime.UtcNow;
             ViewBag.CompletedTodayIds = completedTodayIds;
             ViewBag.ParticipantScore = participant.TotalScore;
             ViewBag.ParticipantStreak = participant.CurrentStreak;

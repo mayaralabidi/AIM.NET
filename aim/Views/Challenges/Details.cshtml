@@ -270,6 +270,16 @@
         text-align: center;
     }
 
+    .badge-expired {
+        display: inline-block;
+        background: rgba(255,255,255,0.05);
+        color: var(--mu);
+        border: 0.5px solid var(--br);
+        border-radius: 6px;
+        padding: 5px 12px;
+        font-size: 12px;
+    }
+
     /* Toast */
     #aim-toast {
         position: fixed;
@@ -422,12 +432,20 @@
                     }
                     else
                     {
-                        <form asp-action="Complete" asp-controller="TaskCompletions" method="post" style="flex-shrink:0;">
-                            @Html.AntiForgeryToken()
-                            <input type="hidden" name="taskId" value="@t.Id" />
-                            <input type="hidden" name="challengeId" value="@Model.Id" />
-                            <button type="submit" class="btn-complete">Complete</button>
-                        </form>
+                        @if (ViewBag.IsExpired == true)
+                        {
+                            <span class="badge-expired">Challenge Ended</span>
+                        }
+                        else
+                        {
+                            <form method="post" asp-action="Complete" asp-controller="TaskCompletions">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="taskId" value="@task.Id" />
+                                <button type="submit" class="btn-complete @(completedToday ? "done" : "")">
+                                    @(completedToday ? "✓ Done" : "Complete")
+                                </button>
+                            </form>
+                        }
                     }
                 </div>
             }

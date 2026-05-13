@@ -1,65 +1,293 @@
-﻿@model IEnumerable<aim.Models.PersonalGoal>
-
+﻿@model List<aim.Models.PersonalGoal>
 @{
-    ViewData["Title"] = "Index";
+    ViewData["Title"] = "Goals";
+    var active = Model.Where(g => !g.IsReached).ToList();
+    var reached = Model.Where(g => g.IsReached).ToList();
 }
 
-<h1>Index</h1>
+<div class="pg-wrap">
+    <div class="pg-header">
+        <div>
+            <div class="pg-title">Your <span>Goals</span></div>
+            <div class="pg-sub">@active.Count active · @reached.Count reached</div>
+        </div>
+        <a asp-action="Create" class="btn-new">+ New Goal</a>
+    </div>
 
-<p>
-    <a asp-action="Create">Create New</a>
-</p>
-<table class="table">
-    <thead>
-        <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.Description)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.TargetValue)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.CurrentValue)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.TargetDate)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.IsReached)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Participant)
-            </th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-@foreach (var item in Model) {
-        <tr>
-            <td>
-                @Html.DisplayFor(modelItem => item.Description)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.TargetValue)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.CurrentValue)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.TargetDate)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.IsReached)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Participant.Name)
-            </td>
-            <td>
-                <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
-                <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
-                <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>
-            </td>
-        </tr>
-}
-    </tbody>
-</table>
+    @if (!Model.Any())
+    {
+        <div class="pg-empty">
+            <div class="pg-empty-icon">🎯</div>
+            <div class="pg-empty-text">No goals yet</div>
+            <div class="pg-empty-sub">Set your first personal goal to start tracking progress</div>
+            <a asp-action="Create" class="btn-new" style="margin-top:16px">Create a goal</a>
+        </div>
+    }
+    else
+    {
+        @if (active.Any())
+        {
+            <div class="section-label">Active</div>
+            <div class="pg-list">
+                @foreach (var g in active)
+                {
+                    int pct = g.TargetValue == 0 ? 0 : (int)Math.Min(100, Math.Round((double)g.CurrentValue / g.TargetValue * 100));
+                    int daysLeft = (g.TargetDate - DateTime.UtcNow).Days;
+                    <div class="pg-card">
+                        <div class="pg-card-top">
+                            <div class="pg-desc">@g.Description</div>
+                            <form method="post" asp-action="Delete" style="display:inline">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@g.Id" />
+                                <button type="submit" class="pg-delete" onclick="return confirm('Delete this goal?')">✕</button>
+                            </form>
+                        </div>
+                        <div class="pg-progress-track">
+                            <div class="pg-progress-fill" style="width:@pct%"></div>
+                        </div>
+                        <div class="pg-meta">
+                            <span>@g.CurrentValue / @g.TargetValue</span>
+                            <span>@(daysLeft >= 0 ? $"{daysLeft}d left" : "Overdue")</span>
+                        </div>
+                        <form method="post" asp-action="UpdateProgress" class="pg-update-form">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@g.Id" />
+                            <input type="number" name="currentValue" value="@g.CurrentValue"
+                                   min="0" max="@g.TargetValue" class="pg-input" />
+                            <button type="submit" class="pg-update-btn">Update</button>
+                        </form>
+                    </div>
+                }
+            </div>
+        }
+
+        @if (reached.Any())
+        {
+            <div class="section-label">Reached</div>
+            <div class="pg-list">
+                @foreach (var g in reached)
+                {
+                    <div class="pg-card reached">
+                        <div class="pg-card-top">
+                            <div class="pg-desc">✓ @g.Description</div>
+                        </div>
+                        <div class="pg-progress-track">
+                            <div class="pg-progress-fill" style="width:100%"></div>
+                        </div>
+                        <div class="pg-meta">
+                            <span>@g.CurrentValue / @g.TargetValue</span>
+                            <span style="color:var(--t)">Completed!</span>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    }
+</div>
+
+<style>
+    .pg-wrap {
+        max-width: 680px;
+        margin: 0 auto;
+        padding: 28px 20px 80px;
+    }
+
+    .pg-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-bottom: 28px;
+    }
+
+    .pg-title {
+        font-family: 'Barlow Condensed',sans-serif;
+        font-size: 36px;
+        font-weight: 700;
+        color: var(--tx);
+    }
+
+        .pg-title span {
+            color: var(--o);
+        }
+
+    .pg-sub {
+        font-size: 13px;
+        color: var(--mu);
+        margin-top: 4px;
+    }
+
+    .btn-new {
+        background: var(--o);
+        color: #111110;
+        border: none;
+        border-radius: 8px;
+        padding: 9px 16px;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+        transition: opacity .15s;
+    }
+
+        .btn-new:hover {
+            opacity: .85;
+        }
+
+    .section-label {
+        font-family: 'Barlow Condensed',sans-serif;
+        font-size: 11px;
+        font-weight: 500;
+        letter-spacing: .12em;
+        text-transform: uppercase;
+        color: var(--mu);
+        margin: 24px 0 12px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+        .section-label::after {
+            content: '';
+            flex: 1;
+            height: 0.5px;
+            background: var(--br);
+        }
+
+    .pg-empty {
+        text-align: center;
+        padding: 60px 20px;
+    }
+
+    .pg-empty-icon {
+        font-size: 40px;
+        margin-bottom: 12px;
+    }
+
+    .pg-empty-text {
+        font-size: 16px;
+        font-weight: 500;
+        color: var(--tx);
+        margin-bottom: 6px;
+    }
+
+    .pg-empty-sub {
+        font-size: 13px;
+        color: var(--mu);
+    }
+
+    .pg-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .pg-card {
+        background: var(--cd);
+        border: 0.5px solid var(--br);
+        border-radius: 12px;
+        padding: 16px;
+        transition: border-color .2s;
+    }
+
+        .pg-card:hover {
+            border-color: rgba(255,255,255,.15);
+        }
+
+        .pg-card.reached {
+            opacity: .6;
+        }
+
+    .pg-card-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 12px;
+    }
+
+    .pg-desc {
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--tx);
+        flex: 1;
+    }
+
+    .pg-delete {
+        background: none;
+        border: none;
+        color: var(--mu);
+        cursor: pointer;
+        font-size: 14px;
+        padding: 0 4px;
+        transition: color .15s;
+    }
+
+        .pg-delete:hover {
+            color: var(--r);
+        }
+
+    .pg-progress-track {
+        height: 4px;
+        background: rgba(255,255,255,.08);
+        border-radius: 2px;
+        overflow: hidden;
+        margin-bottom: 8px;
+    }
+
+    .pg-progress-fill {
+        height: 100%;
+        background: var(--o);
+        border-radius: 2px;
+        transition: width .6s ease;
+    }
+
+    .pg-card.reached .pg-progress-fill {
+        background: var(--t);
+    }
+
+    .pg-meta {
+        display: flex;
+        justify-content: space-between;
+        font-size: 12px;
+        color: var(--mu);
+        margin-bottom: 12px;
+    }
+
+    .pg-update-form {
+        display: flex;
+        gap: 8px;
+    }
+
+    .pg-input {
+        flex: 1;
+        background: rgba(255,255,255,.05);
+        border: 0.5px solid var(--br);
+        border-radius: 6px;
+        padding: 6px 10px;
+        font-size: 13px;
+        color: var(--tx);
+        font-family: 'DM Sans',sans-serif;
+        outline: none;
+    }
+
+        .pg-input:focus {
+            border-color: var(--o);
+        }
+
+    .pg-update-btn {
+        background: rgba(239,159,39,.15);
+        color: var(--o);
+        border: 0.5px solid rgba(239,159,39,.3);
+        border-radius: 6px;
+        padding: 6px 14px;
+        font-size: 13px;
+        cursor: pointer;
+        transition: background .15s;
+    }
+
+        .pg-update-btn:hover {
+            background: rgba(239,159,39,.25);
+        }
+</style>

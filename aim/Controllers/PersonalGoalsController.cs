@@ -1,166 +1,103 @@
 ﻿using aim.Data;
+using aim.Extensions;
 using aim.Models;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace aim.Controllers
 {
     [Authorize]
-    public class PersonalGoalsController : Controller
+    public class PersonalGoalsController : BaseController
     {
-        private readonly AimDbContext _context;
+        public PersonalGoalsController(AimDbContext context,
+                                        UserManager<ApplicationUser> userManager)
+            : base(context, userManager) { }
 
-        public PersonalGoalsController(AimDbContext context)
-        {
-            _context = context;
-        }
-
-        // GET: PersonalGoals
         public async Task<IActionResult> Index()
         {
-            var aimDbContext = _context.PersonalGoal.Include(p => p.Participant);
-            return View(await aimDbContext.ToListAsync());
+            var participant = await this.GetCurrentParticipantAsync(_userManager, _context);
+            if (participant == null) return RedirectToAction("Login", "Auth");
+
+            var goals = await _context.PersonalGoal
+                .Where(g => g.ParticipantId == participant.Id)
+                .OrderBy(g => g.IsReached)
+                .ThenBy(g => g.TargetDate)
+                .ToListAsync();
+
+            return View(goals);
         }
 
-        // GET: PersonalGoals/Details/5
-        public async Task<IActionResult> Details(int? id)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
+        public IActionResult Create() => View();
 
-            var personalGoal = await _context.PersonalGoal
-                .Include(p => p.Participant)
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (personalGoal == null)
-            {
-                return NotFound();
-            }
-
-            return View(personalGoal);
-        }
-
-        // GET: PersonalGoals/Create
-        public IActionResult Create()
-        {
-            ViewData["ParticipantId"] = new SelectList(_context.Participants, "Id", "Name");
-            return View();
-        }
-
-        // POST: PersonalGoals/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,Description,TargetValue,CurrentValue,TargetDate,IsReached,ParticipantId")] PersonalGoal personalGoal)
+        public async Task<IActionResult> Create(string description, int targetValue, DateTime targetDate)
         {
-            if (ModelState.IsValid)
-            {
-                _context.Add(personalGoal);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
-            }
-            ViewData["ParticipantId"] = new SelectList(_context.Participants, "Id", "Name", personalGoal.ParticipantId);
-            return View(personalGoal);
-        }
+            var participant = await this.GetCurrentParticipantAsync(_userManager, _context);
+            if (participant == null) return RedirectToAction("Login", "Auth");
 
-        // GET: PersonalGoals/Edit/5
-        public async Task<IActionResult> Edit(int? id)
-        {
-            if (id == null)
+            if (string.IsNullOrWhiteSpace(description) || targetValue <= 0)
             {
-                return NotFound();
+                ViewBag.Error = "Please fill in all fields.";
+                return View();
             }
 
-            var personalGoal = await _context.PersonalGoal.FindAsync(id);
-            if (personalGoal == null)
+            _context.PersonalGoal.Add(new PersonalGoal
             {
-                return NotFound();
-            }
-            ViewData["ParticipantId"] = new SelectList(_context.Participants, "Id", "Name", personalGoal.ParticipantId);
-            return View(personalGoal);
-        }
-
-        // POST: PersonalGoals/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Description,TargetValue,CurrentValue,TargetDate,IsReached,ParticipantId")] PersonalGoal personalGoal)
-        {
-            if (id != personalGoal.Id)
-            {
-                return NotFound();
-            }
-
-            if (ModelState.IsValid)
-            {
-                try
-                {
-                    _context.Update(personalGoal);
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!PersonalGoalExists(personalGoal.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
-                return RedirectToAction(nameof(Index));
-            }
-            ViewData["ParticipantId"] = new SelectList(_context.Participants, "Id", "Name", personalGoal.ParticipantId);
-            return View(personalGoal);
-        }
-
-        // GET: PersonalGoals/Delete/5
-        public async Task<IActionResult> Delete(int? id)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            var personalGoal = await _context.PersonalGoal
-                .Include(p => p.Participant)
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (personalGoal == null)
-            {
-                return NotFound();
-            }
-
-            return View(personalGoal);
-        }
-
-        // POST: PersonalGoals/Delete/5
-        [HttpPost, ActionName("Delete")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(int id)
-        {
-            var personalGoal = await _context.PersonalGoal.FindAsync(id);
-            if (personalGoal != null)
-            {
-                _context.PersonalGoal.Remove(personalGoal);
-            }
+                Description = description,
+                TargetValue = targetValue,
+                CurrentValue = 0,
+                TargetDate = targetDate,
+                IsReached = false,
+                ParticipantId = participant.Id
+            });
 
             await _context.SaveChangesAsync();
+            TempData["Toast"] = "Goal created!";
+            TempData["ToastType"] = "success";
             return RedirectToAction(nameof(Index));
         }
 
-        private bool PersonalGoalExists(int id)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UpdateProgress(int id, int currentValue)
         {
-            return _context.PersonalGoal.Any(e => e.Id == id);
+            var participant = await this.GetCurrentParticipantAsync(_userManager, _context);
+            if (participant == null) return RedirectToAction("Login", "Auth");
+
+            var goal = await _context.PersonalGoal
+                .FirstOrDefaultAsync(g => g.Id == id && g.ParticipantId == participant.Id);
+
+            if (goal == null) return NotFound();
+
+            goal.CurrentValue = Math.Min(currentValue, goal.TargetValue);
+            goal.IsReached = goal.CurrentValue >= goal.TargetValue;
+
+            await _context.SaveChangesAsync();
+
+            TempData["Toast"] = goal.IsReached ? "🎯 Goal reached!" : "Progress updated!";
+            TempData["ToastType"] = goal.IsReached ? "badge" : "success";
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var participant = await this.GetCurrentParticipantAsync(_userManager, _context);
+            if (participant == null) return RedirectToAction("Login", "Auth");
+
+            var goal = await _context.PersonalGoal
+                .FirstOrDefaultAsync(g => g.Id == id && g.ParticipantId == participant.Id);
+
+            if (goal != null) _context.PersonalGoal.Remove(goal);
+            await _context.SaveChangesAsync();
+
+            TempData["Toast"] = "Goal deleted.";
+            TempData["ToastType"] = "warning";
+            return RedirectToAction(nameof(Index));
         }
     }
 }

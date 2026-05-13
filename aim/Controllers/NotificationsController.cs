@@ -1,6 +1,9 @@
 ﻿using aim.Data;
+using aim.Extensions;
 using aim.Models;
+using aim.Services;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -15,10 +18,16 @@ namespace aim.Controllers
     public class NotificationsController : Controller
     {
         private readonly AimDbContext _context;
+        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly INotificationService _notificationService;
 
-        public NotificationsController(AimDbContext context)
+        public NotificationsController(AimDbContext context,
+                                        UserManager<ApplicationUser> userManager,
+                                        INotificationService notificationService)
         {
             _context = context;
+            _userManager = userManager;
+            _notificationService = notificationService;
         }
 
         // GET: Notifications
@@ -158,6 +167,34 @@ namespace aim.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        // GET: Notifications/Feed
+        public async Task<IActionResult> Feed()
+        {
+            var participant = await this.GetCurrentParticipantAsync(_userManager, _context);
+            if (participant == null) return RedirectToAction("Login", "Auth");
+
+            var notifications = await _context.Notification
+                .Where(n => n.ParticipantId == participant.Id)
+                .OrderByDescending(n => n.SentAt)
+                .Take(50)
+                .ToListAsync();
+
+            await _notificationService.MarkAllReadAsync(participant.Id);
+
+            return View(notifications);
+        }
+
+        // POST: Notifications/MarkRead
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> MarkRead()
+        {
+            var participant = await this.GetCurrentParticipantAsync(_userManager, _context);
+            if (participant == null) return RedirectToAction("Login", "Auth");
+
+            await _notificationService.MarkAllReadAsync(participant.Id);
+            return RedirectToAction("Feed");
+        }
         private bool NotificationExists(int id)
         {
             return _context.Notification.Any(e => e.Id == id);

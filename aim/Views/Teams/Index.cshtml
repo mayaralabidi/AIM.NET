@@ -11,9 +11,11 @@
 
     @if (!Model.Any())
     {
-        <div style="text-align:center;padding:60px 20px;color:var(--mu);font-size:14px;">
-            <strong style="display:block;font-size:18px;color:var(--tx);margin-bottom:8px;">No teams yet</strong>
-            Create the first squad and invite your crew.
+        <div class="empty-state">
+            <div class="empty-icon">👥</div>
+            <div class="empty-text">No teams yet</div>
+            <div class="empty-sub">Join a team with an invite code</div>
+            <a asp-action="Join" class="btn-cta">Join a team</a>
         </div>
     }
     else

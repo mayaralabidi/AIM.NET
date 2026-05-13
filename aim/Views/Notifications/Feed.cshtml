@@ -1,0 +1,113 @@
+﻿@model List<aim.Models.Notification>
+@{
+    ViewData["Title"] = "Notifications";
+}
+
+<div class="nf-wrap">
+    <div class="nf-header">
+        <div>
+            <div class="nf-title">Notifications</div>
+            <div class="nf-sub">@Model.Count total</div>
+        </div>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="nf-empty">
+            <div class="nf-empty-icon">🔔</div>
+            <div class="nf-empty-text">No notifications yet</div>
+            <div class="nf-empty-sub">Complete tasks to earn badges and climb the leaderboard</div>
+        </div>
+    }
+    else
+    {
+        <div class="nf-list">
+            @foreach (var n in Model)
+            {
+                <div class="nf-item @(n.IsRead ? "read" : "unread")">
+                    <div class="nf-msg">@n.Message</div>
+                    <div class="nf-time">@n.SentAt.ToString("MMM d · h:mm tt")</div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+<style>
+    .nf-wrap {
+        max-width: 680px;
+        margin: 0 auto;
+        padding: 28px 20px 80px;
+    }
+
+    .nf-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        margin-bottom: 28px;
+    }
+
+    .nf-title {
+        font-family: 'Barlow Condensed',sans-serif;
+        font-size: 36px;
+        font-weight: 700;
+        color: var(--tx);
+    }
+
+    .nf-sub {
+        font-size: 13px;
+        color: var(--mu);
+        margin-top: 4px;
+    }
+
+    .nf-empty {
+        text-align: center;
+        padding: 60px 20px;
+    }
+
+    .nf-empty-icon {
+        font-size: 40px;
+        margin-bottom: 12px;
+    }
+
+    .nf-empty-text {
+        font-size: 16px;
+        font-weight: 500;
+        color: var(--tx);
+        margin-bottom: 6px;
+    }
+
+    .nf-empty-sub {
+        font-size: 13px;
+        color: var(--mu);
+    }
+
+    .nf-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .nf-item {
+        padding: 14px 16px;
+        border-radius: 10px;
+        border: 0.5px solid var(--br);
+        background: var(--cd);
+    }
+
+        .nf-item.unread {
+            border-color: rgba(239,159,39,.3);
+            background: rgba(239,159,39,.04);
+        }
+
+    .nf-msg {
+        font-size: 14px;
+        color: var(--tx);
+        margin-bottom: 4px;
+    }
+
+    .nf-time {
+        font-size: 11px;
+        color: var(--mu);
+    }
+</style>

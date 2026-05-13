@@ -36,7 +36,7 @@ builder.Services.ConfigureApplicationCookie(options =>
 // Program.cs — register the services
 builder.Services.AddScoped<IBadgeService, BadgeService>();
 builder.Services.AddScoped<TaskCompletionService>();
-
+builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddControllersWithViews();
 
 var app = builder.Build();

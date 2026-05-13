@@ -10,19 +10,24 @@
     @await RenderSectionAsync("Styles", required: false)
 </head>
 <body>
-
     <nav class="aim-nav">
         <a asp-controller="Home" asp-action="Index" class="aim-logo">
             A<span>I</span>M
         </a>
-
         <div class="aim-nav-links">
             <a asp-controller="Challenges" asp-action="Index" class="nav-link">Challenges</a>
             <a asp-controller="Teams" asp-action="Index" class="nav-link">Teams</a>
             <a asp-controller="Participants" asp-action="Dashboard" class="nav-link">Dashboard</a>
             <a asp-controller="Participants" asp-action="Badges" class="nav-link">Badges</a>
+            <a asp-controller="PersonalGoals" asp-action="Index" class="nav-link">Goals</a>
+            <a asp-controller="Notifications" asp-action="Feed" class="nav-link nav-bell">
+                🔔
+                @if ((int)(ViewBag.UnreadNotifications ?? 0) > 0)
+                {
+                    <span class="bell-dot">@ViewBag.UnreadNotifications</span>
+                }
+            </a>
         </div>
-
         <div class="aim-nav-right">
             @* Streak pill *@
             <div class="streak-pill">
@@ -34,6 +39,14 @@
                 <span id="nav-score">—</span>
                 <span class="pts-label">pts</span>
             </div>
+            @* Logout *@
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                <form method="post" asp-action="Logout" asp-controller="Auth" style="display:inline">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="nav-logout">Sign out</button>
+                </form>
+            }
             @* Mobile menu toggle *@
             <button class="menu-toggle" onclick="toggleMenu()" aria-label="Menu">
                 <span></span><span></span><span></span>
@@ -47,19 +60,25 @@
         <a asp-controller="Teams" asp-action="Index" class="mob-link">Teams</a>
         <a asp-controller="Participants" asp-action="Dashboard" class="mob-link">Dashboard</a>
         <a asp-controller="Participants" asp-action="Badges" class="mob-link">Badges</a>
+        <a asp-controller="PersonalGoals" asp-action="Index" class="mob-link">Goals</a>
+        <a asp-controller="Notifications" asp-action="Feed" class="mob-link">🔔 Notifications</a>
+        @if (User.Identity?.IsAuthenticated == true)
+        {
+            <form method="post" asp-action="Logout" asp-controller="Auth">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="mob-link mob-logout">Sign out</button>
+            </form>
+        }
     </div>
 
     <main>
         @RenderBody()
     </main>
 
-    @* Global toast partial *@
     @await Html.PartialAsync("_Toast")
-
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/aim.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
-
 </body>
 </html>

@@ -93,9 +93,10 @@
 
     @if (!Model.Any())
     {
-        <div class="empty">
-            <strong>No challenges yet</strong>
-            Check back soon or ask your admin to add some.
+        <div class="empty-state">
+            <div class="empty-icon">⚡</div>
+            <div class="empty-text">No challenges yet</div>
+            <div class="empty-sub">Challenges will appear here once created</div>
         </div>
     }
     else

@@ -17,13 +17,16 @@ namespace aim.Controllers
         private readonly AimDbContext _context;
         private readonly IBadgeService _badgeService;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly INotificationService _notificationService;
 
         public TaskCompletionsController(AimDbContext context,
                                           IBadgeService badgeService,
+                                          INotificationService notificationService,
                                           UserManager<ApplicationUser> userManager)
         {
             _context = context;
             _badgeService = badgeService;
+            _notificationService = notificationService;
             _userManager = userManager;
         }
 
@@ -215,6 +218,31 @@ namespace aim.Controllers
             {
                 TempData["Toast"] = $"+{pointsEarned} pts · Streak {participant.CurrentStreak} 🔥";
                 TempData["ToastType"] = "success";
+            }
+
+            // Notify badge unlocks
+            foreach (var badge in newBadges)
+                await _notificationService.NotifyBadgeUnlockedAsync(participant.Id, badge.Name);
+
+            // Notify streak at risk (20h+ since last activity on next login — check here too)
+            if (participant.CurrentStreak > 0)
+            {
+                var hoursActive = (DateTime.UtcNow - participant.LastActivityDate!.Value).TotalHours;
+                if (hoursActive >= 20)
+                    await _notificationService.NotifyStreakAtRiskAsync(participant.Id, participant.CurrentStreak);
+            }
+
+            // Notify overtaken teammates
+            if (participant.TeamId.HasValue)
+            {
+                var overtaken = await _context.Participants
+                    .Where(p => p.TeamId == participant.TeamId
+                             && p.Id != participant.Id
+                             && p.TotalScore < participant.TotalScore)
+                    .ToListAsync();
+
+                foreach (var p in overtaken)
+                    await _notificationService.NotifyOvertakenAsync(p.Id, participant.Name);
             }
 
             return RedirectToAction("Details", "Challenges", new { id = task.ChallengeId });

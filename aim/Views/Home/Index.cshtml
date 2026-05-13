@@ -1,8 +1,368 @@
 ﻿@{
-    ViewData["Title"] = "Home Page";
+    ViewData["Title"] = "AIM";
+    Layout = null;
 }
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AIM — Discipline, Streaks, Teams</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;700;800&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet" />
+    <style>
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
-</div>
+        body {
+            background: #111110;
+            color: #f0ede8;
+            font-family: 'DM Sans',sans-serif;
+            min-height: 100vh;
+        }
+
+        /* NAV */
+        nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 40px;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .logo {
+            font-family: 'Barlow Condensed',sans-serif;
+            font-size: 28px;
+            font-weight: 800;
+            color: #EF9F27;
+            letter-spacing: .06em;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 0.5px solid rgba(255,255,255,.2);
+            color: #f0ede8;
+            border-radius: 8px;
+            padding: 8px 18px;
+            font-size: 13px;
+            font-family: 'DM Sans',sans-serif;
+            cursor: pointer;
+            text-decoration: none;
+            transition: border-color .15s;
+        }
+
+            .btn-outline:hover {
+                border-color: rgba(255,255,255,.5);
+            }
+
+        .btn-solid {
+            background: #EF9F27;
+            border: none;
+            color: #111110;
+            border-radius: 8px;
+            padding: 8px 18px;
+            font-size: 13px;
+            font-weight: 500;
+            font-family: 'DM Sans',sans-serif;
+            cursor: pointer;
+            text-decoration: none;
+            transition: opacity .15s;
+        }
+
+            .btn-solid:hover {
+                opacity: .88;
+            }
+
+        /* HERO */
+        .hero {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 80px 40px 60px;
+            text-align: center;
+        }
+
+        .hero-label {
+            display: inline-block;
+            background: rgba(239,159,39,.1);
+            border: 0.5px solid rgba(239,159,39,.3);
+            color: #EF9F27;
+            border-radius: 20px;
+            padding: 5px 14px;
+            font-size: 12px;
+            font-weight: 500;
+            margin-bottom: 24px;
+            letter-spacing: .04em;
+            text-transform: uppercase;
+        }
+
+        .hero h1 {
+            font-family: 'Barlow Condensed',sans-serif;
+            font-size: clamp(56px,10vw,96px);
+            font-weight: 800;
+            line-height: .95;
+            letter-spacing: -.01em;
+            margin-bottom: 24px;
+        }
+
+            .hero h1 span {
+                color: #EF9F27;
+            }
+
+        .hero p {
+            font-size: 18px;
+            color: #888780;
+            max-width: 520px;
+            margin: 0 auto 40px;
+            line-height: 1.6;
+        }
+
+        .hero-cta {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn-hero {
+            background: #EF9F27;
+            color: #111110;
+            border: none;
+            border-radius: 10px;
+            padding: 14px 32px;
+            font-size: 15px;
+            font-weight: 500;
+            font-family: 'DM Sans',sans-serif;
+            cursor: pointer;
+            text-decoration: none;
+            transition: opacity .15s;
+        }
+
+            .btn-hero:hover {
+                opacity: .88;
+            }
+
+        .btn-hero-ghost {
+            background: transparent;
+            border: 0.5px solid rgba(255,255,255,.15);
+            color: #f0ede8;
+            border-radius: 10px;
+            padding: 14px 32px;
+            font-size: 15px;
+            font-family: 'DM Sans',sans-serif;
+            cursor: pointer;
+            text-decoration: none;
+            transition: border-color .15s;
+        }
+
+            .btn-hero-ghost:hover {
+                border-color: rgba(255,255,255,.4);
+            }
+
+        /* STATS BAR */
+        .stats-bar {
+            display: flex;
+            justify-content: center;
+            gap: 0;
+            max-width: 600px;
+            margin: 60px auto;
+            background: #1a1918;
+            border: 0.5px solid rgba(255,255,255,.08);
+            border-radius: 14px;
+            overflow: hidden;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            flex: 1;
+            min-width: 120px;
+            padding: 20px 24px;
+            text-align: center;
+            border-right: 0.5px solid rgba(255,255,255,.08);
+        }
+
+            .stat-item:last-child {
+                border-right: none;
+            }
+
+        .stat-num {
+            font-family: 'Barlow Condensed',sans-serif;
+            font-size: 36px;
+            font-weight: 700;
+            color: #EF9F27;
+            line-height: 1;
+        }
+
+        .stat-lbl {
+            font-size: 12px;
+            color: #888780;
+            margin-top: 4px;
+        }
+
+        /* FEATURES */
+        .features {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 40px 80px;
+        }
+
+        .features-title {
+            font-family: 'Barlow Condensed',sans-serif;
+            font-size: 42px;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit,minmax(260px,1fr));
+            gap: 16px;
+        }
+
+        .feature-card {
+            background: #1a1918;
+            border: 0.5px solid rgba(255,255,255,.08);
+            border-radius: 14px;
+            padding: 28px 24px;
+            transition: border-color .2s;
+        }
+
+            .feature-card:hover {
+                border-color: rgba(255,255,255,.2);
+            }
+
+        .feature-icon {
+            font-size: 28px;
+            margin-bottom: 14px;
+        }
+
+        .feature-name {
+            font-family: 'Barlow Condensed',sans-serif;
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .feature-desc {
+            font-size: 14px;
+            color: #888780;
+            line-height: 1.6;
+        }
+
+        /* CTA */
+        .cta-section {
+            text-align: center;
+            padding: 60px 40px 100px;
+        }
+
+        .cta-title {
+            font-family: 'Barlow Condensed',sans-serif;
+            font-size: clamp(36px,6vw,64px);
+            font-weight: 800;
+            margin-bottom: 16px;
+        }
+
+            .cta-title span {
+                color: #EF9F27;
+            }
+
+        .cta-sub {
+            font-size: 16px;
+            color: #888780;
+            margin-bottom: 32px;
+        }
+
+        @@media (max-width:600px) {
+            nav {
+                padding: 16px 20px;
+            }
+
+            .hero {
+                padding: 60px 20px 40px;
+            }
+
+            .features {
+                padding: 0 20px 60px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <div class="logo">AIM</div>
+        <div class="nav-links">
+            <a asp-controller="Auth" asp-action="Login" class="btn-outline">Sign in</a>
+            <a asp-controller="Auth" asp-action="Register" class="btn-solid">Get started</a>
+        </div>
+    </nav>
+
+    <section class="hero">
+        <div class="hero-label">Discipline tracking, reinvented</div>
+        <h1>Build habits.<br /><span>Break records.</span></h1>
+        <p>AIM turns daily discipline into a competitive sport. Track streaks, complete challenges, earn badges, and dominate your team leaderboard.</p>
+        <div class="hero-cta">
+            <a asp-controller="Auth" asp-action="Register" class="btn-hero">Start for free</a>
+            <a asp-controller="Auth" asp-action="Login" class="btn-hero-ghost">Sign in</a>
+        </div>
+    </section>
+
+    <div class="stats-bar">
+        <div class="stat-item"><div class="stat-num">22</div><div class="stat-lbl">Badges to earn</div></div>
+        <div class="stat-item"><div class="stat-num">∞</div><div class="stat-lbl">Day streaks possible</div></div>
+        <div class="stat-item"><div class="stat-num">🔥</div><div class="stat-lbl">Daily motivation</div></div>
+    </div>
+
+    <section class="features">
+        <div class="features-title">Everything you need to stay disciplined</div>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">🔥</div>
+                <div class="feature-name">Daily Streaks</div>
+                <div class="feature-desc">Complete tasks every day to build your streak. Miss a day and it resets — the pressure keeps you sharp.</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">⚔️</div>
+                <div class="feature-name">Team Competition</div>
+                <div class="feature-desc">Join a team with an invite code and compete on the leaderboard. Getting overtaken is the best motivation.</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🏅</div>
+                <div class="feature-name">Badge System</div>
+                <div class="feature-desc">22 badges across streaks, tasks, score, and special achievements. Collect them all.</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🎯</div>
+                <div class="feature-name">Personal Goals</div>
+                <div class="feature-desc">Set your own targets with deadlines and track progress. Your goals, your rules.</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📊</div>
+                <div class="feature-name">Dashboard</div>
+                <div class="feature-desc">Your 28-day activity calendar, challenge progress, and team rank — all at a glance.</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🔔</div>
+                <div class="feature-name">Notifications</div>
+                <div class="feature-desc">Get alerted when you earn a badge, get overtaken, or when your streak is at risk.</div>
+            </div>
+        </div>
+    </section>
+
+    <section class="cta-section">
+        <div class="cta-title">Ready to <span>AIM</span> higher?</div>
+        <div class="cta-sub">Join today. Your streak starts now.</div>
+        <a asp-controller="Auth" asp-action="Register" class="btn-hero">Create your account</a>
+    </section>
+
+</body>
+</html>
