@@ -1,61 +1,50 @@
 ﻿using aim.Data;
+using aim.Extensions;
 using aim.Models;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Security.Claims;
-using System.Threading.Tasks;
 
 namespace aim.Controllers
 {
+    [Authorize]
     public class ParticipantsController : Controller
     {
         private readonly AimDbContext _context;
+        private readonly UserManager<ApplicationUser> _userManager;
 
-        public ParticipantsController(AimDbContext context)
+        public ParticipantsController(AimDbContext context, UserManager<ApplicationUser> userManager)
         {
             _context = context;
+            _userManager = userManager;
         }
 
-        // GET: Participants
         public async Task<IActionResult> Index()
         {
             var aimDbContext = _context.Participants.Include(p => p.Team);
             return View(await aimDbContext.ToListAsync());
         }
 
-        // GET: Participants/Details/5
         public async Task<IActionResult> Details(int? id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
+            if (id == null) return NotFound();
 
             var participant = await _context.Participants
                 .Include(p => p.Team)
                 .FirstOrDefaultAsync(m => m.Id == id);
-            if (participant == null)
-            {
-                return NotFound();
-            }
 
+            if (participant == null) return NotFound();
             return View(participant);
         }
 
-        // GET: Participants/Create
         public IActionResult Create()
         {
             ViewData["TeamId"] = new SelectList(_context.Teams, "Id", "Id");
             return View();
         }
 
-        // POST: Participants/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Id,Name,Email,TotalScore,CurrentStreak,LastActivityDate,TeamId")] Participant participant)
@@ -70,34 +59,20 @@ namespace aim.Controllers
             return View(participant);
         }
 
-        // GET: Participants/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
+            if (id == null) return NotFound();
             var participant = await _context.Participants.FindAsync(id);
-            if (participant == null)
-            {
-                return NotFound();
-            }
+            if (participant == null) return NotFound();
             ViewData["TeamId"] = new SelectList(_context.Teams, "Id", "Id", participant.TeamId);
             return View(participant);
         }
 
-        // POST: Participants/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Name,Email,TotalScore,CurrentStreak,LastActivityDate,TeamId")] Participant participant)
+        public async Task<IActionResult> Edit(int id, [Bind("Id,Name,Email,TotalScore,CurrentStreak,BestStreak,LastActivityDate,TeamId")] Participant participant)
         {
-            if (id != participant.Id)
-            {
-                return NotFound();
-            }
+            if (id != participant.Id) return NotFound();
 
             if (ModelState.IsValid)
             {
@@ -108,14 +83,8 @@ namespace aim.Controllers
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (!ParticipantExists(participant.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
+                    if (!ParticipantExists(participant.Id)) return NotFound();
+                    else throw;
                 }
                 return RedirectToAction(nameof(Index));
             }
@@ -123,36 +92,22 @@ namespace aim.Controllers
             return View(participant);
         }
 
-        // GET: Participants/Delete/5
         public async Task<IActionResult> Delete(int? id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
+            if (id == null) return NotFound();
             var participant = await _context.Participants
                 .Include(p => p.Team)
                 .FirstOrDefaultAsync(m => m.Id == id);
-            if (participant == null)
-            {
-                return NotFound();
-            }
-
+            if (participant == null) return NotFound();
             return View(participant);
         }
 
-        // POST: Participants/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var participant = await _context.Participants.FindAsync(id);
-            if (participant != null)
-            {
-                _context.Participants.Remove(participant);
-            }
-
+            if (participant != null) _context.Participants.Remove(participant);
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
@@ -160,36 +115,33 @@ namespace aim.Controllers
         // GET: Participants/Dashboard
         public async Task<IActionResult> Dashboard()
         {
-            // Simple load first — no complex includes
-            var participant = await _context.Participants
-                .Include(p => p.Team)
-                .FirstOrDefaultAsync();
+            var participant = await this.GetCurrentParticipantAsync(_userManager, _context);
+            if (participant == null) return RedirectToAction("Login", "Auth");
 
-            if (participant == null) return NotFound();
+            participant = await _context.Participants
+                .Include(p => p.Team)
+                .FirstOrDefaultAsync(p => p.Id == participant.Id);
+            if (participant == null) return RedirectToAction("Login", "Auth");
 
             var now = DateTime.UtcNow;
             var monthStart = new DateTime(now.Year, now.Month, 1);
             var last28 = now.AddDays(-27).Date;
 
-            // Load badges separately
             var badges = await _context.ParticipantBadges
                 .Include(pb => pb.Badge)
                 .Where(pb => pb.ParticipantId == participant.Id)
                 .ToListAsync();
 
-            // Load completions separately
             var completions = await _context.TaskCompletions
                 .Where(tc => tc.ParticipantId == participant.Id)
                 .ToListAsync();
 
-            // Load participations separately
             var participations = await _context.Participation
                 .Include(p => p.Challenge)
                     .ThenInclude(c => c.Tasks)
                 .Where(p => p.ParticipantId == participant.Id)
                 .ToListAsync();
 
-            // Streak calendar
             var activeDates = completions
                 .Where(tc => tc.CompletedAt.Date >= last28)
                 .Select(tc => tc.CompletedAt.Date)
@@ -204,7 +156,6 @@ namespace aim.Controllers
                 })
                 .ToList();
 
-            // Challenge progresses
             var completedTaskIds = completions
                 .Select(tc => tc.ChallengeTaskId)
                 .ToHashSet();
@@ -224,7 +175,6 @@ namespace aim.Controllers
                 })
                 .ToList();
 
-            // Team leaderboard
             var teammates = new List<Participant>();
             int teamRank = 0;
 
@@ -239,7 +189,6 @@ namespace aim.Controllers
                 teamRank = teammates.FindIndex(p => p.Id == participant.Id) + 1;
             }
 
-            // Attach badges to participant for the view
             participant.ParticipantBadges = badges;
 
             ViewBag.Teammates = teammates;
@@ -254,9 +203,48 @@ namespace aim.Controllers
 
             return View(participant);
         }
-        private bool ParticipantExists(int id)
+
+        // GET: Participants/Badges
+        public async Task<IActionResult> Badges()
         {
-            return _context.Participants.Any(e => e.Id == id);
+            var participant = await this.GetCurrentParticipantAsync(_userManager, _context);
+            if (participant == null) return RedirectToAction("Login", "Auth");
+
+            participant = await _context.Participants
+                .Include(p => p.ParticipantBadges)
+                    .ThenInclude(pb => pb.Badge)
+                .FirstOrDefaultAsync(p => p.Id == participant.Id);
+            if (participant == null) return RedirectToAction("Login", "Auth");
+
+            var allBadges = await _context.Badges.ToListAsync();
+
+            var earnedKeys = participant.ParticipantBadges
+                .Where(pb => pb.Badge != null)
+                .Select(pb => pb.BadgeKey)
+                .ToHashSet();
+
+            var totalTasks = await _context.TaskCompletions
+                .CountAsync(tc => tc.ParticipantId == participant.Id);
+
+            var hardTasks = await _context.TaskCompletions
+                .Include(tc => tc.ChallengeTask)
+                .CountAsync(tc => tc.ParticipantId == participant.Id
+                    && tc.ChallengeTask.Difficulty == aim.Models.enums.DifficultyLevel.Hard);
+
+            ViewBag.EarnedKeys = earnedKeys;
+            ViewBag.TotalTasks = totalTasks;
+            ViewBag.HardTasks = hardTasks;
+            ViewBag.CurrentStreak = participant.CurrentStreak;
+            ViewBag.TotalScore = participant.TotalScore;
+            ViewBag.AllBadges = allBadges;
+            ViewBag.EarnedBadges = participant.ParticipantBadges
+                .OrderByDescending(pb => pb.EarnedAt)
+                .ToList();
+
+            return View(participant);
         }
+
+        private bool ParticipantExists(int id) =>
+            _context.Participants.Any(e => e.Id == id);
     }
 }

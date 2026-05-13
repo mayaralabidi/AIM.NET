@@ -1,31 +1,31 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using aim.Data;
+using aim.Extensions;
 using aim.Models;
 
 namespace aim.Controllers
 {
+    [Authorize]
     public class ChallengesController : Controller
     {
         private readonly AimDbContext _context;
+        private readonly UserManager<ApplicationUser> _userManager;
 
-        public ChallengesController(AimDbContext context)
+        public ChallengesController(AimDbContext context,
+                                     UserManager<ApplicationUser> userManager)
         {
             _context = context;
+            _userManager = userManager;
         }
 
-        // GET: Challenges
         public async Task<IActionResult> Index()
         {
             return View(await _context.Challenges.ToListAsync());
         }
 
-        // GET: Challenges/Details/5
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null) return NotFound();
@@ -36,33 +36,25 @@ namespace aim.Controllers
 
             if (challenge == null) return NotFound();
 
-            // Pass completed task IDs for today so the view can disable done buttons
-            var participant = await _context.Participants.FirstOrDefaultAsync();
-            var today = DateTime.UtcNow.Date;
+            var participant = await this.GetCurrentParticipantAsync(_userManager, _context);
+            if (participant == null) return RedirectToAction("Login", "Auth");
 
-            var completedTodayIds = participant != null
-                ? await _context.TaskCompletions
-                    .Where(tc => tc.ParticipantId == participant.Id && tc.CompletedAt.Date == today)
-                    .Select(tc => tc.ChallengeTaskId)
-                    .ToListAsync()
-                : new List<int>();
+            var today = DateTime.UtcNow.Date;
+            var completedTodayIds = await _context.TaskCompletions
+                .Where(tc => tc.ParticipantId == participant.Id &&
+                             tc.CompletedAt.Date == today)
+                .Select(tc => tc.ChallengeTaskId)
+                .ToListAsync();
 
             ViewBag.CompletedTodayIds = completedTodayIds;
-            ViewBag.ParticipantScore = participant?.TotalScore ?? 0;
-            ViewBag.ParticipantStreak = participant?.CurrentStreak ?? 0;
+            ViewBag.ParticipantScore = participant.TotalScore;
+            ViewBag.ParticipantStreak = participant.CurrentStreak;
 
             return View(challenge);
         }
 
-        // GET: Challenges/Create
-        public IActionResult Create()
-        {
-            return View();
-        }
+        public IActionResult Create() => View();
 
-        // POST: Challenges/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Id,Title,Description,PointsReward,StartDate,EndDate")] Challenge challenge)
@@ -76,33 +68,19 @@ namespace aim.Controllers
             return View(challenge);
         }
 
-        // GET: Challenges/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
+            if (id == null) return NotFound();
             var challenge = await _context.Challenges.FindAsync(id);
-            if (challenge == null)
-            {
-                return NotFound();
-            }
+            if (challenge == null) return NotFound();
             return View(challenge);
         }
 
-        // POST: Challenges/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, [Bind("Id,Title,Description,PointsReward,StartDate,EndDate")] Challenge challenge)
         {
-            if (id != challenge.Id)
-            {
-                return NotFound();
-            }
+            if (id != challenge.Id) return NotFound();
 
             if (ModelState.IsValid)
             {
@@ -113,56 +91,32 @@ namespace aim.Controllers
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (!ChallengeExists(challenge.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
+                    if (!ChallengeExists(challenge.Id)) return NotFound();
+                    else throw;
                 }
                 return RedirectToAction(nameof(Index));
             }
             return View(challenge);
         }
 
-        // GET: Challenges/Delete/5
         public async Task<IActionResult> Delete(int? id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            var challenge = await _context.Challenges
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (challenge == null)
-            {
-                return NotFound();
-            }
-
+            if (id == null) return NotFound();
+            var challenge = await _context.Challenges.FirstOrDefaultAsync(m => m.Id == id);
+            if (challenge == null) return NotFound();
             return View(challenge);
         }
 
-        // POST: Challenges/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var challenge = await _context.Challenges.FindAsync(id);
-            if (challenge != null)
-            {
-                _context.Challenges.Remove(challenge);
-            }
-
+            if (challenge != null) _context.Challenges.Remove(challenge);
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 
-        private bool ChallengeExists(int id)
-        {
-            return _context.Challenges.Any(e => e.Id == id);
-        }
+        private bool ChallengeExists(int id) => _context.Challenges.Any(e => e.Id == id);
     }
 }

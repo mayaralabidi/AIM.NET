@@ -1,0 +1,163 @@
+﻿@{
+    ViewData["Title"] = "Register";
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AIM — Create account</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet" />
+    <style>
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: #111110;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        .card {
+            background: #1a1918;
+            border: 0.5px solid rgba(255,255,255,0.08);
+            border-radius: 16px;
+            padding: 40px 36px;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .logo {
+            font-family: 'Barlow Condensed', sans-serif;
+            font-size: 32px;
+            font-weight: 700;
+            color: #EF9F27;
+            letter-spacing: .04em;
+            margin-bottom: 6px;
+        }
+
+        .sub {
+            font-size: 13px;
+            color: #888780;
+            margin-bottom: 32px;
+        }
+
+        .field {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            font-size: 12px;
+            color: #888780;
+            margin-bottom: 6px;
+        }
+
+        input[type=email], input[type=password], input[type=text] {
+            width: 100%;
+            background: #222120;
+            border: 0.5px solid rgba(255,255,255,0.08);
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 14px;
+            color: #f0ede8;
+            font-family: 'DM Sans', sans-serif;
+            outline: none;
+            transition: border-color .15s;
+        }
+
+        input:focus {
+            border-color: #EF9F27;
+        }
+
+        .btn {
+            width: 100%;
+            background: #EF9F27;
+            color: #111110;
+            border: none;
+            border-radius: 8px;
+            padding: 11px;
+            font-size: 14px;
+            font-weight: 500;
+            font-family: 'DM Sans', sans-serif;
+            cursor: pointer;
+            margin-top: 8px;
+            transition: opacity .15s;
+        }
+
+            .btn:hover {
+                opacity: .88;
+            }
+
+        .error {
+            background: rgba(226,75,74,.12);
+            border: 0.5px solid rgba(226,75,74,.3);
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 13px;
+            color: #E24B4A;
+            margin-bottom: 16px;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 24px;
+            font-size: 13px;
+            color: #888780;
+        }
+
+            .footer a {
+                color: #EF9F27;
+                text-decoration: none;
+            }
+
+        .hint {
+            font-size: 11px;
+            color: #888780;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="logo">AIM</div>
+        <div class="sub">Create your account</div>
+
+        @if (ViewBag.Error != null)
+        {
+            <div class="error">@ViewBag.Error</div>
+        }
+
+        <form method="post" asp-action="Register" asp-controller="Auth">
+            @Html.AntiForgeryToken()
+
+            <div class="field">
+                <label>Display name</label>
+                <input type="text" name="name" placeholder="Your name" autocomplete="name" required />
+            </div>
+            <div class="field">
+                <label>Email</label>
+                <input type="email" name="email" placeholder="you@example.com" autocomplete="email" required />
+            </div>
+            <div class="field">
+                <label>Password</label>
+                <input type="password" name="password" placeholder="Min. 6 characters" autocomplete="new-password" required />
+                <div class="hint">At least 6 characters, one digit.</div>
+            </div>
+            <button type="submit" class="btn">Create account</button>
+        </form>
+
+        <div class="footer">
+            Already have an account? <a asp-action="Login" asp-controller="Auth">Sign in</a>
+        </div>
+    </div>
+</body>
+</html>

@@ -17,9 +17,9 @@ namespace aim.Services
     public class TaskCompletionService
     {
         private readonly AimDbContext _context;
-        private readonly BadgeService _badgeService;
+        private readonly IBadgeService _badgeService;
 
-        public TaskCompletionService(AimDbContext context, BadgeService badgeService)
+        public TaskCompletionService(AimDbContext context, IBadgeService badgeService)
         {
             _context = context;
             _badgeService = badgeService;

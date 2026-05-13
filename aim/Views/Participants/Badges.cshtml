@@ -1,0 +1,218 @@
+﻿@model aim.Models.Participant
+@{
+    ViewData["Title"] = "Badges";
+    var allBadges = ViewBag.AllBadges as List<aim.Models.Badge> ?? new List<aim.Models.Badge>();
+    var earnedKeys = ViewBag.EarnedKeys as HashSet<string> ?? new HashSet<string>();
+    var earnedBadges = ViewBag.EarnedBadges as List<aim.Models.ParticipantBadge> ?? new List<aim.Models.ParticipantBadge>();
+    int totalTasks = (int)(ViewBag.TotalTasks ?? 0);
+    int hardTasks = (int)(ViewBag.HardTasks ?? 0);
+    int streak = (int)(ViewBag.CurrentStreak ?? 0);
+    int score = (int)(ViewBag.TotalScore ?? 0);
+
+    // Progress helper
+    int GetCurrent(string key) => key switch
+    {
+        var k when k.StartsWith("streak_") => streak,
+        var k when k.StartsWith("tasks_") => totalTasks,
+        var k when k.StartsWith("score_") => score,
+
+        // Binary — earned = 1, not earned = 0
+        "team_join" => earnedKeys.Contains("team_join") ? 1 : 0,
+        "team_top3" => earnedKeys.Contains("team_top3") ? 1 : 0,
+        "team_top1" => earnedKeys.Contains("team_top1") ? 1 : 0,
+        "comeback" => earnedKeys.Contains("comeback") ? 1 : 0,
+        "early_bird" => earnedKeys.Contains("early_bird") ? 1 : 0,
+        "night_owl" => earnedKeys.Contains("night_owl") ? 1 : 0,
+        "overachiever" => earnedKeys.Contains("overachiever") ? 1 : 0,
+
+        _ => 0
+    };
+
+    int GetTarget(string key) => key switch
+    {
+        // Streak
+        "streak_3" => 3,
+        "streak_7" => 7,
+        "streak_14" => 14,
+        "streak_30" => 30,
+        "streak_100" => 100,
+
+        // Tasks
+        "tasks_1" => 1,
+        "tasks_10" => 10,
+        "tasks_50" => 50,
+        "tasks_100" => 100,
+        "tasks_250" => 250,
+        "tasks_500" => 500,
+
+        // Score
+        "score_500" => 500,
+        "score_1000" => 1000,
+        "score_5000" => 5000,
+        "score_10000" => 10000,
+
+        // Social & Special — binary (either done or not)
+        "team_join" => 1,
+        "team_top3" => 1,
+        "team_top1" => 1,
+        "comeback" => 1,
+        "early_bird" => 1,
+        "night_owl" => 1,
+        "overachiever" => 1,
+
+        _ => 1
+    };
+}
+
+<div class="bg-wrap">
+
+    <div class="bg-header">
+        <a asp-action="Dashboard" class="back-link">← Dashboard</a>
+        <div>
+            <div class="bg-title">Your <span>Badges</span></div>
+            <div class="bg-sub">@earnedKeys.Count of @allBadges.Count unlocked</div>
+        </div>
+        <div class="bg-summary">
+            <div class="bg-stat">
+                <strong>@earnedKeys.Count</strong>
+                Earned
+            </div>
+            <div class="bg-stat">
+                <strong>@(allBadges.Count - earnedKeys.Count)</strong>
+                Locked
+            </div>
+            <div class="bg-stat">
+                <strong>@(allBadges.Count == 0 ? 0 : (int)Math.Round((double)earnedKeys.Count / allBadges.Count * 100))%</strong>
+                Complete
+            </div>
+        </div>
+    </div>
+
+    @* Recently earned *@
+    @if (earnedBadges.Any())
+    {
+        <div class="section-label">Recently earned</div>
+        <div class="earned-strip">
+            @foreach (var pb in earnedBadges.Take(4))
+            {
+                <div class="earned-card">
+                    <img src="~/images/badges/@pb.Badge.IconPath"
+                         class="earned-img"
+                         alt="@pb.Badge.Name"
+                         onerror="this.style.opacity='0'" />
+                    <div class="earned-name">@pb.Badge.Name</div>
+                    <div class="earned-date">@pb.EarnedAt.ToString("MMM d")</div>
+                </div>
+            }
+        </div>
+    }
+
+    @* All badges grid *@
+    @{
+        var categories = new[]
+        {
+        ("Streak",     allBadges.Where(b => b.Key.StartsWith("streak_")).ToList()),
+        ("Tasks",      allBadges.Where(b => b.Key.StartsWith("tasks_")).ToList()),
+        ("Score",      allBadges.Where(b => b.Key.StartsWith("score_")).ToList()),
+        ("Difficulty", allBadges.Where(b => b.Key.StartsWith("hard_") || b.Key == "easy_clean" || b.Key == "all_diff").ToList()),
+        ("Social",     allBadges.Where(b => b.Key.StartsWith("team_")).ToList()),
+        ("Special",    allBadges.Where(b => new[]{"comeback","perfect_week","early_bird","night_owl","speed_run","overachiever","consistent"}.Contains(b.Key)).ToList()),
+        };
+    }
+
+    @foreach (var (label, badges) in categories)
+    {
+        if (!badges.Any()) continue;
+        <div class="section-label">@label</div>
+        <div class="badge-grid">
+            @foreach (var b in badges)
+            {
+                bool earned = earnedKeys.Contains(b.Key);
+                int cur = GetCurrent(b.Key);
+                int target = GetTarget(b.Key);
+                int pct = target == 0 ? 0 : (int)Math.Min(100, Math.Round((double)cur / target * 100));
+                string earnedAt = earned
+                ? earnedBadges.FirstOrDefault(pb => pb.BadgeKey == b.Key)?.EarnedAt.ToString("MMM d, yyyy") ?? ""
+                : "";
+
+                <div class="badge-card @(earned ? "earned" : "locked")">
+                    <div class="badge-img-wrap">
+                        <img src="~/images/badges/@b.IconPath"
+                             class="badge-img @(earned ? "" : "grayscale")"
+                             alt="@b.Name"
+                             onerror="this.style.opacity='0'" />
+                        @if (earned)
+                        {
+                            <div class="earned-tick">✓</div>
+                        }
+                    </div>
+                    <div class="badge-name">@b.Name</div>
+                    <div class="badge-criteria">@b.Criteria</div>
+
+                    @if (earned)
+                    {
+                        <div class="badge-earned-date">Earned @earnedAt</div>
+                    }
+                    else
+                    {
+                        <div class="badge-prog-wrap">
+                            <div class="badge-prog-track">
+                                <div class="badge-prog-fill" style="width:@pct%"></div>
+                            </div>
+                            <div class="badge-prog-label">@cur / @target</div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    }
+
+</div>
+
+<style>
+    .bg-wrap { max-width:900px; margin:0 auto; padding:28px 20px 80px; }
+
+    .bg-header { display:flex; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; gap:16px; margin-bottom:32px; }
+    .back-link { font-size:12px; color:var(--mu); transition:color .15s; margin-top:4px; }
+    .back-link:hover { color:var(--tx); }
+    .bg-title { font-family:'Barlow Condensed',sans-serif; font-size:36px; font-weight:700; line-height:1; }
+    .bg-title span { color:var(--o); }
+    .bg-sub { font-size:13px; color:var(--mu); margin-top:4px; }
+    .bg-summary { display:flex; gap:10px; flex-wrap:wrap; }
+    .bg-stat { background:var(--cd); border:0.5px solid var(--br); border-radius:10px; padding:10px 16px; font-size:12px; color:var(--mu); min-width:80px; text-align:center; }
+    .bg-stat strong { display:block; font-family:'Barlow Condensed',sans-serif; font-size:24px; font-weight:700; color:var(--tx); line-height:1; margin-bottom:3px; }
+
+    .section-label { font-family:'Barlow Condensed',sans-serif; font-size:11px; font-weight:500; letter-spacing:.12em; text-transform:uppercase; color:var(--mu); margin:24px 0 12px; display:flex; align-items:center; gap:10px; }
+    .section-label::after { content:''; flex:1; height:0.5px; background:var(--br); }
+
+    .earned-strip { display:flex; gap:10px; overflow-x:auto; padding-bottom:4px; margin-bottom:8px; }
+    .earned-card { background:var(--cd); border:0.5px solid rgba(239,159,39,.3); border-radius:12px; padding:16px 14px; text-align:center; min-width:110px; flex-shrink:0; }
+    .earned-img { width:48px; height:48px; object-fit:contain; margin-bottom:8px; }
+    .earned-name { font-size:12px; font-weight:500; color:var(--tx); margin-bottom:3px; }
+    .earned-date { font-size:10px; color:var(--o); }
+
+    .badge-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(150px,1fr)); gap:10px; margin-bottom:8px; }
+
+    .badge-card { background:var(--cd); border:0.5px solid var(--br); border-radius:12px; padding:16px 12px; text-align:center; transition:border-color .2s; }
+    .badge-card.earned { border-color:rgba(239,159,39,.25); }
+    .badge-card.locked { opacity:.6; }
+    .badge-card:hover { border-color:rgba(255,255,255,.2); opacity:1; }
+
+    .badge-img-wrap { position:relative; display:inline-block; margin-bottom:10px; }
+    .badge-img { width:52px; height:52px; object-fit:contain; }
+    .badge-img.grayscale { filter:grayscale(1); }
+    .earned-tick { position:absolute; bottom:-4px; right:-4px; width:18px; height:18px; border-radius:50%; background:var(--t); color:#04342C; font-size:10px; font-weight:700; display:flex; align-items:center; justify-content:center; }
+
+    .badge-name { font-size:13px; font-weight:500; color:var(--tx); margin-bottom:4px; }
+    .badge-criteria { font-size:10px; color:var(--mu); line-height:1.4; margin-bottom:8px; }
+    .badge-earned-date { font-size:10px; color:var(--o); font-weight:500; }
+
+    .badge-prog-wrap { }
+    .badge-prog-track { height:3px; background:rgba(255,255,255,.08); border-radius:2px; overflow:hidden; margin-bottom:4px; }
+    .badge-prog-fill { height:100%; border-radius:2px; background:var(--p); transition:width .6s ease; }
+    .badge-prog-label { font-size:10px; color:var(--mu); }
+
+    @@media (max-width:560px) {
+        .badge-grid { grid-template-columns:repeat(auto-fill, minmax(120px,1fr)); }
+    }
+</style>

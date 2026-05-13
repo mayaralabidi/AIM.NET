@@ -23,3 +23,20 @@
         <span class="toast-pts" style="font-size:13px;">@TempData["Error"]</span>
     </div>
 }
+
+@{
+    var toast = TempData["Toast"] as string;
+    var type = TempData["ToastType"] as string ?? "success";
+    var color = type switch
+    {
+        "badge" => "var(--p)",   // purple for badge unlocks
+        "warning" => "var(--o)",   // orange for warnings
+        "error" => "var(--r)",   // red for errors
+        _ => "var(--t)"    // teal for success
+    };
+}
+
+@if (toast != null)
+{
+    <div id="aim-toast" style="border-left-color: @color">@toast</div>
+}

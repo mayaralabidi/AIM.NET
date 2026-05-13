@@ -15,18 +15,20 @@ namespace aim.Controllers
 
         public IActionResult Index()
         {
-            return View();
-        }
+            // Redirect logged-in users straight to Dashboard
+            if (User.Identity?.IsAuthenticated == true)
+                return RedirectToAction("Dashboard", "Participants");
 
-        public IActionResult Privacy()
-        {
-            return View();
+            return RedirectToAction("Login", "Auth");
         }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
         {
-            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+            return View(new ErrorViewModel
+            {
+                RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier
+            });
         }
     }
 }

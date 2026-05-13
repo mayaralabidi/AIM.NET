@@ -22,6 +22,211 @@ namespace aim.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("ConcurrencyStamp")
+                        .IsConcurrencyToken()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Name")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("NormalizedName")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("NormalizedName")
+                        .IsUnique()
+                        .HasDatabaseName("RoleNameIndex")
+                        .HasFilter("[NormalizedName] IS NOT NULL");
+
+                    b.ToTable("AspNetRoles", (string)null);
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ClaimType")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ClaimValue")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("RoleId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RoleId");
+
+                    b.ToTable("AspNetRoleClaims", (string)null);
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<string>", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ClaimType")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ClaimValue")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("AspNetUserClaims", (string)null);
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<string>", b =>
+                {
+                    b.Property<string>("LoginProvider")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("ProviderKey")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("ProviderDisplayName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("LoginProvider", "ProviderKey");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("AspNetUserLogins", (string)null);
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserRole<string>", b =>
+                {
+                    b.Property<string>("UserId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("RoleId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("UserId", "RoleId");
+
+                    b.HasIndex("RoleId");
+
+                    b.ToTable("AspNetUserRoles", (string)null);
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<string>", b =>
+                {
+                    b.Property<string>("UserId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("LoginProvider")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Value")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("UserId", "LoginProvider", "Name");
+
+                    b.ToTable("AspNetUserTokens", (string)null);
+                });
+
+            modelBuilder.Entity("aim.Models.ApplicationUser", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("AccessFailedCount")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ConcurrencyStamp")
+                        .IsConcurrencyToken()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<bool>("EmailConfirmed")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("LockoutEnabled")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTimeOffset?>("LockoutEnd")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("NormalizedEmail")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("NormalizedUserName")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<int?>("ParticipantId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("PasswordHash")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PhoneNumber")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("PhoneNumberConfirmed")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("SecurityStamp")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("TwoFactorEnabled")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("UserName")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("NormalizedEmail")
+                        .HasDatabaseName("EmailIndex");
+
+                    b.HasIndex("NormalizedUserName")
+                        .IsUnique()
+                        .HasDatabaseName("UserNameIndex")
+                        .HasFilter("[NormalizedUserName] IS NOT NULL");
+
+                    b.HasIndex("ParticipantId")
+                        .IsUnique()
+                        .HasFilter("[ParticipantId] IS NOT NULL");
+
+                    b.ToTable("AspNetUsers", (string)null);
+                });
+
             modelBuilder.Entity("aim.Models.Badge", b =>
                 {
                     b.Property<int>("Id")
@@ -49,6 +254,184 @@ namespace aim.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Badges");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Criteria = "3 day streak",
+                            IconPath = "3days.png",
+                            Key = "streak_3",
+                            Name = "First Steps"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Criteria = "7 day streak",
+                            IconPath = "7days.png",
+                            Key = "streak_7",
+                            Name = "Week Warrior"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            Criteria = "14 day streak",
+                            IconPath = "14days.png",
+                            Key = "streak_14",
+                            Name = "Fortnight Fighter"
+                        },
+                        new
+                        {
+                            Id = 4,
+                            Criteria = "30 day streak",
+                            IconPath = "30days.png",
+                            Key = "streak_30",
+                            Name = "Iron Will"
+                        },
+                        new
+                        {
+                            Id = 5,
+                            Criteria = "100 day streak",
+                            IconPath = "100days.png",
+                            Key = "streak_100",
+                            Name = "Legendary"
+                        },
+                        new
+                        {
+                            Id = 6,
+                            Criteria = "Complete first task",
+                            IconPath = "1stblood.png",
+                            Key = "tasks_1",
+                            Name = "First Blood"
+                        },
+                        new
+                        {
+                            Id = 7,
+                            Criteria = "Complete 10 tasks",
+                            IconPath = "10tasks.png",
+                            Key = "tasks_10",
+                            Name = "Warming Up"
+                        },
+                        new
+                        {
+                            Id = 8,
+                            Criteria = "Complete 50 tasks",
+                            IconPath = "50tasks.png",
+                            Key = "tasks_50",
+                            Name = "Half Century"
+                        },
+                        new
+                        {
+                            Id = 9,
+                            Criteria = "Complete 100 tasks",
+                            IconPath = "100tasks.png",
+                            Key = "tasks_100",
+                            Name = "Centurion"
+                        },
+                        new
+                        {
+                            Id = 10,
+                            Criteria = "Complete 250 tasks",
+                            IconPath = "250tasks.png",
+                            Key = "tasks_250",
+                            Name = "Machine"
+                        },
+                        new
+                        {
+                            Id = 11,
+                            Criteria = "Complete 500 tasks",
+                            IconPath = "500tasks.png",
+                            Key = "tasks_500",
+                            Name = "Relentless"
+                        },
+                        new
+                        {
+                            Id = 12,
+                            Criteria = "Reach 500 points",
+                            IconPath = "500score.png",
+                            Key = "score_500",
+                            Name = "Rising Star"
+                        },
+                        new
+                        {
+                            Id = 13,
+                            Criteria = "Reach 1000 points",
+                            IconPath = "1000score.png",
+                            Key = "score_1000",
+                            Name = "High Roller"
+                        },
+                        new
+                        {
+                            Id = 14,
+                            Criteria = "Reach 5000 points",
+                            IconPath = "5000score.png",
+                            Key = "score_5000",
+                            Name = "Elite"
+                        },
+                        new
+                        {
+                            Id = 15,
+                            Criteria = "Reach 10000 points",
+                            IconPath = "10000score.png",
+                            Key = "score_10000",
+                            Name = "Untouchable"
+                        },
+                        new
+                        {
+                            Id = 16,
+                            Criteria = "Join a team",
+                            IconPath = "joinateam.png",
+                            Key = "team_join",
+                            Name = "Squad Up"
+                        },
+                        new
+                        {
+                            Id = 17,
+                            Criteria = "Reach top 3 in your team",
+                            IconPath = "podium.png",
+                            Key = "team_top3",
+                            Name = "Podium"
+                        },
+                        new
+                        {
+                            Id = 18,
+                            Criteria = "Reach #1 in your team",
+                            IconPath = "alpha.png",
+                            Key = "team_top1",
+                            Name = "Alpha"
+                        },
+                        new
+                        {
+                            Id = 19,
+                            Criteria = "Restart a streak after losing one",
+                            IconPath = "comebackkid.png",
+                            Key = "comeback",
+                            Name = "Comeback Kid"
+                        },
+                        new
+                        {
+                            Id = 20,
+                            Criteria = "Complete a task before 8am",
+                            IconPath = "earlybird.png",
+                            Key = "early_bird",
+                            Name = "Early Bird"
+                        },
+                        new
+                        {
+                            Id = 21,
+                            Criteria = "Complete a task after 10pm",
+                            IconPath = "nightowl.png",
+                            Key = "night_owl",
+                            Name = "Night Owl"
+                        },
+                        new
+                        {
+                            Id = 22,
+                            Criteria = "Complete every task in a challenge",
+                            IconPath = "overachiever.png",
+                            Key = "overachiever",
+                            Name = "Overachiever"
+                        });
                 });
 
             modelBuilder.Entity("aim.Models.Challenge", b =>
@@ -349,6 +732,67 @@ namespace aim.Migrations
                     b.HasIndex("ChallengeId");
 
                     b.ToTable("TeamChallenges");
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
+                {
+                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
+                        .WithMany()
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<string>", b =>
+                {
+                    b.HasOne("aim.Models.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<string>", b =>
+                {
+                    b.HasOne("aim.Models.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserRole<string>", b =>
+                {
+                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
+                        .WithMany()
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("aim.Models.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<string>", b =>
+                {
+                    b.HasOne("aim.Models.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("aim.Models.ApplicationUser", b =>
+                {
+                    b.HasOne("aim.Models.Participant", "Participant")
+                        .WithOne()
+                        .HasForeignKey("aim.Models.ApplicationUser", "ParticipantId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Participant");
                 });
 
             modelBuilder.Entity("aim.Models.ChallengeTask", b =>

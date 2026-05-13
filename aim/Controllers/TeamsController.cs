@@ -1,57 +1,40 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using aim.Data;
+﻿using aim.Data;
+using aim.Extensions;
 using aim.Models;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace aim.Controllers
 {
+    [Authorize]
     public class TeamsController : Controller
     {
         private readonly AimDbContext _context;
+        private readonly UserManager<ApplicationUser> _userManager;
 
-        public TeamsController(AimDbContext context)
+        public TeamsController(AimDbContext context, UserManager<ApplicationUser> userManager)
         {
             _context = context;
+            _userManager = userManager;
         }
 
-        // GET: Teams
         public async Task<IActionResult> Index()
         {
             return View(await _context.Teams.Include(t => t.Members).ToListAsync());
         }
 
-        // GET: Teams/Details/5
         public async Task<IActionResult> Details(int? id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            var team = await _context.Teams
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (team == null)
-            {
-                return NotFound();
-            }
-
+            if (id == null) return NotFound();
+            var team = await _context.Teams.FirstOrDefaultAsync(m => m.Id == id);
+            if (team == null) return NotFound();
             return View(team);
         }
 
-        // GET: Teams/Create
-        public IActionResult Create()
-        {
-            return View();
-        }
+        public IActionResult Create() => View();
 
-        // POST: Teams/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Id,Name,InviteCode")] Team team)
@@ -65,33 +48,19 @@ namespace aim.Controllers
             return View(team);
         }
 
-        // GET: Teams/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
+            if (id == null) return NotFound();
             var team = await _context.Teams.FindAsync(id);
-            if (team == null)
-            {
-                return NotFound();
-            }
+            if (team == null) return NotFound();
             return View(team);
         }
 
-        // POST: Teams/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, [Bind("Id,Name,InviteCode")] Team team)
         {
-            if (id != team.Id)
-            {
-                return NotFound();
-            }
+            if (id != team.Id) return NotFound();
 
             if (ModelState.IsValid)
             {
@@ -102,58 +71,34 @@ namespace aim.Controllers
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (!TeamExists(team.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
+                    if (!TeamExists(team.Id)) return NotFound();
+                    else throw;
                 }
                 return RedirectToAction(nameof(Index));
             }
             return View(team);
         }
 
-        // GET: Teams/Delete/5
         public async Task<IActionResult> Delete(int? id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            var team = await _context.Teams
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (team == null)
-            {
-                return NotFound();
-            }
-
+            if (id == null) return NotFound();
+            var team = await _context.Teams.FirstOrDefaultAsync(m => m.Id == id);
+            if (team == null) return NotFound();
             return View(team);
         }
 
-        // POST: Teams/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var team = await _context.Teams.FindAsync(id);
-            if (team != null)
-            {
-                _context.Teams.Remove(team);
-            }
-
+            if (team != null) _context.Teams.Remove(team);
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 
         // GET: Teams/Join
-        public IActionResult Join()
-        {
-            return View();
-        }
+        public IActionResult Join() => View();
 
         // POST: Teams/Join
         [HttpPost]
@@ -175,21 +120,21 @@ namespace aim.Controllers
                 return View();
             }
 
-            // For now grab first participant — replace with Identity later
-            var participant = await _context.Participants.FirstOrDefaultAsync();
-            if (participant == null) return NotFound();
+            var participant = await this.GetCurrentParticipantAsync(_userManager, _context);
+            if (participant == null) return RedirectToAction("Login", "Auth");
 
-            // Already on this team?
             if (participant.TeamId == team.Id)
             {
-                TempData["Error"] = "You're already in this team.";
+                TempData["Toast"] = "You're already in this team.";
+                TempData["ToastType"] = "warning";
                 return RedirectToAction("Leaderboard", new { id = team.Id });
             }
 
             participant.TeamId = team.Id;
             await _context.SaveChangesAsync();
 
-            TempData["Toast"] = "Joined " + team.Name + "!";
+            TempData["Toast"] = $"Joined {team.Name}!";
+            TempData["ToastType"] = "success";
             return RedirectToAction("Leaderboard", new { id = team.Id });
         }
 
@@ -204,19 +149,16 @@ namespace aim.Controllers
 
             if (team == null) return NotFound();
 
-            // Sort by score descending
             team.Members = team.Members
                 .OrderByDescending(p => p.TotalScore)
                 .ToList();
 
-            var currentParticipant = await _context.Participants.FirstOrDefaultAsync();
-            ViewBag.CurrentParticipantId = currentParticipant?.Id ?? 0;
+            var participant = await this.GetCurrentParticipantAsync(_userManager, _context);
+            ViewBag.CurrentParticipantId = participant?.Id ?? 0;
 
             return View(team);
         }
-        private bool TeamExists(int id)
-        {
-            return _context.Teams.Any(e => e.Id == id);
-        }
+
+        private bool TeamExists(int id) => _context.Teams.Any(e => e.Id == id);
     }
 }

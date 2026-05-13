@@ -1,52 +1,53 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using aim.Data;
+using aim.Extensions;
+using aim.Models;
+using aim.Models.enums;
+using aim.Services;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
-using aim.Data;
-using aim.Models;
 
 namespace aim.Controllers
 {
+    [Authorize]
     public class TaskCompletionsController : Controller
     {
         private readonly AimDbContext _context;
+        private readonly IBadgeService _badgeService;
+        private readonly UserManager<ApplicationUser> _userManager;
 
-        public TaskCompletionsController(AimDbContext context)
+        public TaskCompletionsController(AimDbContext context,
+                                          IBadgeService badgeService,
+                                          UserManager<ApplicationUser> userManager)
         {
             _context = context;
+            _badgeService = badgeService;
+            _userManager = userManager;
         }
 
-        // GET: TaskCompletions
         public async Task<IActionResult> Index()
         {
-            var aimDbContext = _context.TaskCompletions.Include(t => t.ChallengeTask).Include(t => t.Participant);
+            var aimDbContext = _context.TaskCompletions
+                .Include(t => t.ChallengeTask)
+                .Include(t => t.Participant);
             return View(await aimDbContext.ToListAsync());
         }
 
-        // GET: TaskCompletions/Details/5
         public async Task<IActionResult> Details(int? id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
+            if (id == null) return NotFound();
 
             var taskCompletion = await _context.TaskCompletions
                 .Include(t => t.ChallengeTask)
                 .Include(t => t.Participant)
                 .FirstOrDefaultAsync(m => m.Id == id);
-            if (taskCompletion == null)
-            {
-                return NotFound();
-            }
 
+            if (taskCompletion == null) return NotFound();
             return View(taskCompletion);
         }
 
-        // GET: TaskCompletions/Create
         public IActionResult Create()
         {
             ViewData["ChallengeTaskId"] = new SelectList(_context.ChallengeTasks, "Id", "Title");
@@ -54,9 +55,6 @@ namespace aim.Controllers
             return View();
         }
 
-        // POST: TaskCompletions/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Id,CompletedAt,ParticipantId,ChallengeTaskId")] TaskCompletion taskCompletion)
@@ -72,35 +70,21 @@ namespace aim.Controllers
             return View(taskCompletion);
         }
 
-        // GET: TaskCompletions/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
+            if (id == null) return NotFound();
             var taskCompletion = await _context.TaskCompletions.FindAsync(id);
-            if (taskCompletion == null)
-            {
-                return NotFound();
-            }
+            if (taskCompletion == null) return NotFound();
             ViewData["ChallengeTaskId"] = new SelectList(_context.ChallengeTasks, "Id", "Title", taskCompletion.ChallengeTaskId);
             ViewData["ParticipantId"] = new SelectList(_context.Participants, "Id", "Name", taskCompletion.ParticipantId);
             return View(taskCompletion);
         }
 
-        // POST: TaskCompletions/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, [Bind("Id,CompletedAt,ParticipantId,ChallengeTaskId")] TaskCompletion taskCompletion)
         {
-            if (id != taskCompletion.Id)
-            {
-                return NotFound();
-            }
+            if (id != taskCompletion.Id) return NotFound();
 
             if (ModelState.IsValid)
             {
@@ -111,14 +95,8 @@ namespace aim.Controllers
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (!TaskCompletionExists(taskCompletion.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
+                    if (!TaskCompletionExists(taskCompletion.Id)) return NotFound();
+                    else throw;
                 }
                 return RedirectToAction(nameof(Index));
             }
@@ -127,37 +105,23 @@ namespace aim.Controllers
             return View(taskCompletion);
         }
 
-        // GET: TaskCompletions/Delete/5
         public async Task<IActionResult> Delete(int? id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
+            if (id == null) return NotFound();
             var taskCompletion = await _context.TaskCompletions
                 .Include(t => t.ChallengeTask)
                 .Include(t => t.Participant)
                 .FirstOrDefaultAsync(m => m.Id == id);
-            if (taskCompletion == null)
-            {
-                return NotFound();
-            }
-
+            if (taskCompletion == null) return NotFound();
             return View(taskCompletion);
         }
 
-        // POST: TaskCompletions/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var taskCompletion = await _context.TaskCompletions.FindAsync(id);
-            if (taskCompletion != null)
-            {
-                _context.TaskCompletions.Remove(taskCompletion);
-            }
-
+            if (taskCompletion != null) _context.TaskCompletions.Remove(taskCompletion);
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
@@ -165,86 +129,98 @@ namespace aim.Controllers
         // POST: TaskCompletions/Complete
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Complete(int taskId, int challengeId)
+        public async Task<IActionResult> Complete(int taskId)
         {
-            // ── Get the current participant ──────────────────────────────────────
-            // Replace this with your actual auth once you add Identity.
-            // For now, grab the first participant from seed data for testing.
-            var participant = await _context.Participants.FirstOrDefaultAsync();
-            if (participant == null) return NotFound();
+            var participant = await this.GetCurrentParticipantAsync(_userManager, _context);
+            if (participant == null) return RedirectToAction("Login", "Auth");
 
             var task = await _context.ChallengeTasks
                 .Include(t => t.Challenge)
                 .FirstOrDefaultAsync(t => t.Id == taskId);
             if (task == null) return NotFound();
 
-            // ── Guard: already completed today? ─────────────────────────────────
-            var today = DateTime.UtcNow.Date;
+            var now = DateTime.UtcNow;
+            var today = DateOnly.FromDateTime(now);
+
             bool alreadyDone = await _context.TaskCompletions.AnyAsync(tc =>
                 tc.ParticipantId == participant.Id &&
                 tc.ChallengeTaskId == taskId &&
-                tc.CompletedAt.Date == today);
+                DateOnly.FromDateTime(tc.CompletedAt) == today);
 
             if (alreadyDone)
             {
-                TempData["Error"] = "Already completed today.";
-                return RedirectToAction("Details", "Challenges", new { id = challengeId });
+                TempData["Toast"] = "Already completed today!";
+                TempData["ToastType"] = "warning";
+                return RedirectToAction("Details", "Challenges", new { id = task.ChallengeId });
             }
 
-            // ── 1. Calculate points ──────────────────────────────────────────────
-            int basePoints = 10;
+            // Points
             int multiplier = task.Difficulty switch
             {
-                Models.enums.DifficultyLevel.Easy => 1,
-                Models.enums.DifficultyLevel.Medium => 2,
-                Models.enums.DifficultyLevel.Hard => 3,
+                DifficultyLevel.Easy => 1,
+                DifficultyLevel.Medium => 2,
+                DifficultyLevel.Hard => 3,
                 _ => 1
             };
-            int pointsEarned = basePoints * multiplier;
+            int pointsEarned = 10 * multiplier;
+            participant.TotalScore += pointsEarned;
 
-            // ── 2. Update streak ─────────────────────────────────────────────────
-            var now = DateTime.UtcNow;
-
+            // Streak
             if (participant.LastActivityDate == null)
             {
                 participant.CurrentStreak = 1;
             }
             else
             {
-                double hoursSinceLast = (now - participant.LastActivityDate.Value).TotalHours;
-                participant.CurrentStreak = hoursSinceLast < 24
-                    ? participant.CurrentStreak + 1
-                    : 1;
+                var lastDate = DateOnly.FromDateTime(participant.LastActivityDate.Value);
+                if (lastDate == today)
+                {
+                    // same day — no change
+                }
+                else if (lastDate == today.AddDays(-1))
+                {
+                    participant.CurrentStreak += 1;
+                }
+                else
+                {
+                    participant.CurrentStreak = 1;
+                }
             }
 
             if (participant.CurrentStreak > participant.BestStreak)
                 participant.BestStreak = participant.CurrentStreak;
 
-            // ── 3. Update score + timestamp ──────────────────────────────────────
-            participant.TotalScore += pointsEarned;
             participant.LastActivityDate = now;
 
-            // ── 4. Audit log ─────────────────────────────────────────────────────
             _context.TaskCompletions.Add(new TaskCompletion
             {
                 ParticipantId = participant.Id,
                 ChallengeTaskId = taskId,
-                CompletedAt = now,
-                PointsEarned = pointsEarned
+                PointsEarned = pointsEarned,
+                CompletedAt = now
             });
 
             await _context.SaveChangesAsync();
 
-            // ── 5. TempData for toast ────────────────────────────────────────────
-            TempData["Toast"] = $"+{pointsEarned} pts";
-            TempData["ToastType"] = "points";
-            TempData["NewStreak"] = participant.CurrentStreak;
+            // Badge evaluation
+            var newBadges = await _badgeService.EvaluateAndAwardAsync(participant.Id);
 
-            return RedirectToAction("Details", "Challenges", new { id = challengeId });
+            if (newBadges.Count > 0)
+            {
+                var names = string.Join(", ", newBadges.Select(b => b.Name));
+                TempData["Toast"] = $"+{pointsEarned} pts · Streak {participant.CurrentStreak} 🔥 · 🏅 {names}!";
+                TempData["ToastType"] = "badge";
+            }
+            else
+            {
+                TempData["Toast"] = $"+{pointsEarned} pts · Streak {participant.CurrentStreak} 🔥";
+                TempData["ToastType"] = "success";
+            }
+
+            return RedirectToAction("Details", "Challenges", new { id = task.ChallengeId });
         }
-        private bool TaskCompletionExists(int id)
-        {
-            return _context.TaskCompletions.Any(e => e.Id == id);
-        }
+
+        private bool TaskCompletionExists(int id) =>
+            _context.TaskCompletions.Any(e => e.Id == id);
     }
 }
