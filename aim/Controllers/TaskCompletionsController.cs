@@ -175,7 +175,7 @@ namespace aim.Controllers
             int pointsEarned = 10 * multiplier;
             participant.TotalScore += pointsEarned;
 
-            // Streak
+            // Streak (with freeze token support)
             if (participant.LastActivityDate == null)
             {
                 participant.CurrentStreak = 1;
@@ -183,16 +183,34 @@ namespace aim.Controllers
             else
             {
                 var lastDate = DateOnly.FromDateTime(participant.LastActivityDate.Value);
+
                 if (lastDate == today)
                 {
-                    // same day — no change
+                    // Same day — no change
                 }
                 else if (lastDate == today.AddDays(-1))
                 {
+                    // Yesterday — perfect chain
                     participant.CurrentStreak += 1;
+                }
+                else if (lastDate == today.AddDays(-2) && participant.StreakFreezeTokens > 0)
+                {
+                    // Missed exactly one day — freeze token saves the streak
+                    participant.StreakFreezeTokens -= 1;
+                    participant.CurrentStreak += 1;
+
+                    // Notify user the token was consumed
+                    _context.Notification.Add(new Notification
+                    {
+                        ParticipantId = participant.Id,
+                        Message = $"🧊 Streak freeze used! Your {participant.CurrentStreak}-day streak was saved. You have {participant.StreakFreezeTokens} token left.",
+                        SentAt = DateTime.UtcNow,
+                        IsRead = false
+                    });
                 }
                 else
                 {
+                    // Gap too large or no token — reset
                     participant.CurrentStreak = 1;
                 }
             }
@@ -214,11 +232,33 @@ namespace aim.Controllers
 
             // Badge evaluation
             var newBadges = await _badgeService.EvaluateAndAwardAsync(participant.Id);
-
+            /*
             if (newBadges.Count > 0)
             {
                 var names = string.Join(", ", newBadges.Select(b => b.Name));
                 TempData["Toast"] = $"+{pointsEarned} pts · Streak {participant.CurrentStreak} 🔥 · 🏅 {names}!";
+                TempData["ToastType"] = "badge";
+            }
+            else
+            {
+                TempData["Toast"] = $"+{pointsEarned} pts · Streak {participant.CurrentStreak} 🔥";
+                TempData["ToastType"] = "success";
+            }
+            */
+            // Check for freeze token milestone
+            bool earnedToken = await _badgeService.AwardMilestoneTokenAsync(participant.Id);
+
+            // Build toast
+            if (newBadges.Count > 0 || earnedToken)
+            {
+                var parts = new List<string>();
+                parts.Add($"+{pointsEarned} pts · Streak {participant.CurrentStreak} 🔥");
+                if (newBadges.Count > 0)
+                    parts.Add($"🏅 {string.Join(", ", newBadges.Select(b => b.Name))}!");
+                if (earnedToken)
+                    parts.Add("🧊 Freeze token earned!");
+
+                TempData["Toast"] = string.Join(" · ", parts);
                 TempData["ToastType"] = "badge";
             }
             else

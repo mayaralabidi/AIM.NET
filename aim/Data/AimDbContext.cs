@@ -19,7 +19,10 @@ namespace aim.Data
         public DbSet<Badge> Badges { get; set; }
         public DbSet<Team> Teams { get; set; }
         public DbSet<TeamChallenge> TeamChallenges { get; set; }
-
+        public DbSet<Follow> Follows { get; set; }
+        public DbSet<ChallengeComment> ChallengeComments { get; set; }
+        public DbSet<DailyCheckIn> DailyCheckIns { get; set; }
+        public DbSet<TeamMembership> TeamMemberships { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -111,6 +114,22 @@ namespace aim.Data
                 new Badge { Id = 21, Key = "night_owl", Name = "Night Owl", IconPath = "nightowl.png", Criteria = "Complete a task after 10pm" },
                 new Badge { Id = 22, Key = "overachiever", Name = "Overachiever", IconPath = "overachiever.png", Criteria = "Complete every task in a challenge" }
             );
+
+            modelBuilder.Entity<Follow>()
+                .HasOne(f => f.Follower)
+                .WithMany()
+                .HasForeignKey(f => f.FollowerId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            modelBuilder.Entity<Follow>()
+                .HasOne(f => f.Following)
+                .WithMany()
+                .HasForeignKey(f => f.FollowingId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            modelBuilder.Entity<Follow>()
+                .HasIndex(f => new { f.FollowerId, f.FollowingId })
+                .IsUnique();
         }
         public DbSet<aim.Models.Notification> Notification { get; set; } = default!;
         public DbSet<aim.Models.PersonalGoal> PersonalGoal { get; set; } = default!;

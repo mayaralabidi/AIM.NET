@@ -8,6 +8,7 @@ namespace aim.Services
     public interface IBadgeService
     {
         Task<List<Badge>> EvaluateAndAwardAsync(int participantId);
+        Task<bool> AwardMilestoneTokenAsync(int participantId);
     }
 
     public class BadgeService : IBadgeService
@@ -148,6 +149,44 @@ namespace aim.Services
                 await _context.SaveChangesAsync();
 
             return newBadges;
+        }
+
+        public async Task<bool> AwardMilestoneTokenAsync(int participantId)
+        {
+            var participant = await _context.Participants
+                .FirstOrDefaultAsync(p => p.Id == participantId);
+            if (participant == null) return false;
+
+            // Max 1 token
+            if (participant.StreakFreezeTokens >= 1) return false;
+
+            var totalTasks = await _context.TaskCompletions
+                .CountAsync(tc => tc.ParticipantId == participantId);
+
+            bool streakMilestone = participant.CurrentStreak > 0
+                                && participant.CurrentStreak % 7 == 0;
+
+            bool taskMilestone = totalTasks > 0
+                                && totalTasks % 10 == 0;
+
+            if (!streakMilestone && !taskMilestone) return false;
+
+            participant.StreakFreezeTokens = 1;
+
+            string reason = streakMilestone
+                ? $"{participant.CurrentStreak}-day streak"
+                : $"{totalTasks} tasks completed";
+
+            _context.Notification.Add(new Notification
+            {
+                ParticipantId = participantId,
+                Message = $"🧊 Streak freeze token earned! ({reason}). It will auto-activate if you miss a day.",
+                SentAt = DateTime.UtcNow,
+                IsRead = false
+            });
+
+            await _context.SaveChangesAsync();
+            return true;
         }
     }
 

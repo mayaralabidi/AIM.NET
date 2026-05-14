@@ -23,6 +23,12 @@ namespace aim.Models
         public int? TeamId { get; set; }
         public virtual Team? Team { get; set; }
 
+        public string? Bio { get; set; }
+        public string? AvatarConfig { get; set; } // JSON: {"skin":"#FDDBB4","hair":"#2C1810","color":"#EF9F27"}
+        public string? TwitterHandle { get; set; }
+        public string? InstagramHandle { get; set; }
+
+        public int StreakFreezeTokens { get; set; } = 0;
         public virtual ICollection<Participation> Participations { get; set; } = new List<Participation>();
         public virtual ICollection<ParticipantBadge> ParticipantBadges { get; set; } = new List<ParticipantBadge>();
 

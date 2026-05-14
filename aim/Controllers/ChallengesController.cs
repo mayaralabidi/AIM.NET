@@ -2,6 +2,7 @@
 using aim.Extensions;
 using aim.Helpers;
 using aim.Models;
+using aim.Models.enums;
 using aim.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -45,8 +46,21 @@ namespace aim.Controllers
             var participant = await this.GetCurrentParticipantAsync(_userManager, _context);
             if (participant == null) return RedirectToAction("Login", "Auth");
 
+            bool hasJoined = await _context.Participation.AnyAsync(p => p.ParticipantId == participant.Id &&
+                   p.ChallengeId == id);
+            ViewBag.HasJoined = hasJoined;
+
             var completedTodayIds = await _challengeService.GetCompletedTodayAsync(participant.Id);
 
+            var comments = await _context.ChallengeComments
+                .Include(c => c.Participant)
+                .Where(c => c.ChallengeId == id)
+                .OrderByDescending(c => c.CreatedAt)
+                .Take(30)
+                .ToListAsync();
+
+            ViewBag.Comments = comments;
+            ViewBag.CurrentUserId = participant.Id;
             ViewBag.CompletedTodayIds = completedTodayIds;
             ViewBag.ParticipantScore = participant.TotalScore;
             ViewBag.ParticipantStreak = participant.CurrentStreak;
@@ -119,6 +133,141 @@ namespace aim.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        // POST: Challenges/Create
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CreateChallenge(string title, string description,
+                                                           DateTime endDate, List<string> taskTitles,
+                                                           List<string> taskDescriptions,
+                                                           List<int> taskDifficulties)
+        {
+            var participant = await this.GetCurrentParticipantAsync(_userManager, _context);
+            if (participant == null) return RedirectToAction("Login", "Auth");
+
+            if (string.IsNullOrWhiteSpace(title))
+            {
+                ViewBag.Error = "Challenge title is required.";
+                return View();
+            }
+
+            var challenge = new Challenge
+            {
+                Title = title,
+                Description = description,
+                PointsReward = 0,
+                StartDate = DateTime.UtcNow,
+                EndDate = endDate,
+                CreatedByParticipantId = participant.Id
+            };
+
+            _context.Challenges.Add(challenge);
+            await _context.SaveChangesAsync();
+
+            // Add tasks
+            for (int i = 0; i < taskTitles.Count; i++)
+            {
+                if (string.IsNullOrWhiteSpace(taskTitles[i])) continue;
+
+                var difficulty = (DifficultyLevel)(taskDifficulties.ElementAtOrDefault(i));
+                int points = difficulty switch
+                {
+                    DifficultyLevel.Easy => 10,
+                    DifficultyLevel.Medium => 20,
+                    DifficultyLevel.Hard => 30,
+                    _ => 10
+                };
+
+                _context.ChallengeTasks.Add(new ChallengeTask
+                {
+                    Title = taskTitles[i],
+                    Description = taskDescriptions.ElementAtOrDefault(i) ?? "",
+                    Difficulty = difficulty,
+                    PointsValue = points,
+                    ChallengeId = challenge.Id
+                });
+            }
+
+            // Auto-join the creator
+            _context.Participation.Add(new Participation
+            {
+                ParticipantId = participant.Id,
+                ChallengeId = challenge.Id,
+                JoinedAt = DateTime.UtcNow,
+                CurrentProgress = 0,
+                IsCompleted = false
+            });
+
+            await _context.SaveChangesAsync();
+
+            TempData["Toast"] = $"Challenge '{title}' created!";
+            TempData["ToastType"] = "success";
+            return RedirectToAction("Details", new { id = challenge.Id });
+        }
+
+        // POST: Challenges/Join
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> JoinChallenge(int challengeId)
+        {
+            var participant = await this.GetCurrentParticipantAsync(_userManager, _context);
+            if (participant == null) return RedirectToAction("Login", "Auth");
+
+            bool alreadyJoined = await _context.Participation
+                .AnyAsync(p => p.ParticipantId == participant.Id &&
+                               p.ChallengeId == challengeId);
+
+            if (!alreadyJoined)
+            {
+                _context.Participation.Add(new Participation
+                {
+                    ParticipantId = participant.Id,
+                    ChallengeId = challengeId,
+                    JoinedAt = DateTime.UtcNow,
+                    CurrentProgress = 0,
+                    IsCompleted = false
+                });
+                await _context.SaveChangesAsync();
+
+                TempData["Toast"] = "Challenge joined!";
+                TempData["ToastType"] = "success";
+            }
+            else
+            {
+                TempData["Toast"] = "Already joined.";
+                TempData["ToastType"] = "warning";
+            }
+
+            return RedirectToAction("Details", new { id = challengeId });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Comment(int challengeId, string content)
+        {
+            var participant = await this.GetCurrentParticipantAsync(_userManager, _context);
+            if (participant == null) return RedirectToAction("Login", "Auth");
+
+            if (string.IsNullOrWhiteSpace(content) || content.Length > 300)
+            {
+                TempData["Toast"] = "Comment must be 1-300 characters.";
+                TempData["ToastType"] = "warning";
+                return RedirectToAction("Details", new { id = challengeId });
+            }
+
+            _context.ChallengeComments.Add(new ChallengeComment
+            {
+                Content = content.Trim(),
+                CreatedAt = DateTime.UtcNow,
+                ChallengeId = challengeId,
+                ParticipantId = participant.Id
+            });
+
+            await _context.SaveChangesAsync();
+
+            TempData["Toast"] = "Comment posted!";
+            TempData["ToastType"] = "success";
+            return RedirectToAction("Details", new { id = challengeId });
+        }
         private bool ChallengeExists(int id) => _context.Challenges.Any(e => e.Id == id);
     }
 }

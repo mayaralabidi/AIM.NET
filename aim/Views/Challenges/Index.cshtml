@@ -93,6 +93,11 @@
 <div class="cl-wrap">
     <div class="cl-heading">Active <span>Challenges</span></div>
 
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+        <div class="page-title">Challenges</div>
+        <a asp-action="Create" class="btn-cta">+ Create challenge</a>
+    </div>
+
     @if (!Model.Any())
     {
         <div class="empty-state">
@@ -118,6 +123,11 @@
                         {
                             <span> · @c.Description</span>
                         }
+                        <form method="post" asp-action="JoinChallenge" style="display:inline">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="challengeId" value="@c.Id" />
+                            <button type="submit" class="btn-join">Join</button>
+                        </form>
                     </div>
                 </div>
                 <span class="ch-card-pts">@c.PointsReward pts</span>

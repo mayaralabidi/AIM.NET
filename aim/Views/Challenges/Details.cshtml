@@ -529,4 +529,148 @@
         }
     </div>
 
+    @{
+        var comments = ViewBag.Comments as List<aim.Models.ChallengeComment> ?? new();
+        int currentUid = (int)(ViewBag.CurrentUserId ?? 0);
+    }
+
+    <div class="section-label" style="margin-top:40px">Comments</div>
+
+    <form method="post" asp-action="Comment" asp-controller="Challenges" class="comment-form">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="challengeId" value="@Model.Id" />
+        <textarea name="content" placeholder="Share motivation, tips, or trash talk..."
+                  rows="2" maxlength="300" class="comment-input"></textarea>
+        <button type="submit" class="comment-btn">Post</button>
+    </form>
+
+    @if (!comments.Any())
+    {
+        <div style="text-align:center;padding:24px;color:var(--mu);font-size:13px">
+            No comments yet — be the first!
+        </div>
+    }
+    else
+    {
+        <div class="comment-list">
+            @foreach (var c in comments)
+            {
+                var initials = string.Concat(c.Participant!.Name.Split(' ').Take(2).Select(w => w[0])).ToUpper();
+                var ago = (DateTime.UtcNow - c.CreatedAt).TotalHours < 1
+                ? $"{(int)(DateTime.UtcNow - c.CreatedAt).TotalMinutes}m ago"
+                : (DateTime.UtcNow - c.CreatedAt).TotalHours < 24
+                ? $"{(int)(DateTime.UtcNow - c.CreatedAt).TotalHours}h ago"
+                : c.CreatedAt.ToString("MMM d");
+                <div class="comment-item">
+                    <div class="c-avatar">@initials</div>
+                    <div class="c-body">
+                        <div class="c-header">
+                            <span class="c-name">@c.Participant.Name</span>
+                            <span class="c-time">@ago</span>
+                        </div>
+                        <div class="c-content">@c.Content</div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+
+    <style>
+        .comment-form {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+            align-items: flex-start;
+        }
+
+        .comment-input {
+            flex: 1;
+            background: var(--cd);
+            border: 0.5px solid var(--br);
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-size: 13px;
+            color: var(--tx);
+            font-family: 'DM Sans',sans-serif;
+            outline: none;
+            resize: none;
+            transition: border-color .15s;
+        }
+
+            .comment-input:focus {
+                border-color: var(--o);
+            }
+
+        .comment-btn {
+            background: var(--o);
+            color: #111110;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 16px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            font-family: 'DM Sans',sans-serif;
+            flex-shrink: 0;
+        }
+
+        .comment-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .comment-item {
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+        }
+
+        .c-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: rgba(127,119,221,.15);
+            color: var(--p);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .c-body {
+            flex: 1;
+            background: var(--cd);
+            border: 0.5px solid var(--br);
+            border-radius: 10px;
+            padding: 10px 14px;
+        }
+
+        .c-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 4px;
+        }
+
+        .c-name {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--tx);
+        }
+
+        .c-time {
+            font-size: 11px;
+            color: var(--mu);
+        }
+
+        .c-content {
+            font-size: 13px;
+            color: var(--tx);
+            line-height: 1.5;
+        }
+    </style>
+
 </div>

@@ -1,0 +1,274 @@
+﻿@model aim.Models.Participant
+@{
+    ViewData["Title"] = "Profile";
+    // Parse avatar config
+    var avatarJson = Model.AvatarConfig ?? "{}";
+    var skinColor = "#EF9F27";
+    var hairColor = "#2C1810";
+    var accentColor = "#EF9F27";
+    try
+    {
+        var doc = System.Text.Json.JsonDocument.Parse(avatarJson);
+        if (doc.RootElement.TryGetProperty("skin", out var s)) skinColor = s.GetString() ?? skinColor;
+        if (doc.RootElement.TryGetProperty("hair", out var h)) hairColor = h.GetString() ?? hairColor;
+        if (doc.RootElement.TryGetProperty("color", out var c)) accentColor = c.GetString() ?? accentColor;
+    }
+    catch { }
+    var initials = string.Concat(Model.Name.Split(' ').Take(2).Select(w => w[0])).ToUpper();
+}
+
+<div class="pf-wrap">
+
+    <div class="pf-header">
+        <div class="pf-title">Your <span>Profile</span></div>
+    </div>
+
+    <div class="pf-grid">
+
+        @* ── LEFT: Avatar + stats ── *@
+        <div class="pf-left">
+            <div class="pf-card">
+                <div class="pf-avatar" id="avatarPreview"
+                     style="background:@accentColor">
+                    @initials
+                </div>
+                <div class="pf-name">@Model.Name</div>
+                @if (!string.IsNullOrEmpty(Model.Bio))
+                {
+                    <div class="pf-bio">@Model.Bio</div>
+                }
+                <div class="pf-stats">
+                    <div class="pf-stat">
+                        <strong>@Model.TotalScore</strong>
+                        <span>Points</span>
+                    </div>
+                    <div class="pf-stat">
+                        <strong style="color:var(--t)">@Model.CurrentStreak</strong>
+                        <span>Streak</span>
+                    </div>
+                    <div class="pf-stat">
+                        <strong style="color:var(--p)">@Model.BestStreak</strong>
+                        <span>Best</span>
+                    </div>
+                </div>
+                @if (!string.IsNullOrEmpty(Model.TwitterHandle))
+                {
+                    <a href="https://twitter.com/@Model.TwitterHandle"
+                       target="_blank" class="pf-social tw">
+                        𝕏 @@@Model.TwitterHandle
+                    </a>
+                }
+                @if (!string.IsNullOrEmpty(Model.InstagramHandle))
+                {
+                    <a href="https://instagram.com/@Model.InstagramHandle"
+                       target="_blank" class="pf-social ig">
+                        ◎ @@@Model.InstagramHandle
+                    </a>
+                }
+            </div>
+
+            @* Avatar customizer *@
+            <div class="pf-card">
+                <div class="pf-section-title">Customize avatar</div>
+                <div class="av-preview" id="avPreview"
+                     style="background:@accentColor">
+                    @initials
+                </div>
+
+                <div class="av-row">
+                    <div class="av-label">Accent color</div>
+                    <div class="av-swatches" id="colorSwatches">
+                        <div class="av-swatch @(accentColor == "#EF9F27" ? "active" : "")"
+                             style="background:#EF9F27" data-type="color" data-val="#EF9F27"></div>
+                        <div class="av-swatch @(accentColor == "#7F77DD" ? "active" : "")"
+                             style="background:#7F77DD" data-type="color" data-val="#7F77DD"></div>
+                        <div class="av-swatch @(accentColor == "#1D9E75" ? "active" : "")"
+                             style="background:#1D9E75" data-type="color" data-val="#1D9E75"></div>
+                        <div class="av-swatch @(accentColor == "#E24B4A" ? "active" : "")"
+                             style="background:#E24B4A" data-type="color" data-val="#E24B4A"></div>
+                        <div class="av-swatch @(accentColor == "#378ADD" ? "active" : "")"
+                             style="background:#378ADD" data-type="color" data-val="#378ADD"></div>
+                    </div>
+                </div>
+                <input type="hidden" id="avatarConfigInput" value="@avatarJson" />
+            </div>
+        </div>
+
+        @* ── RIGHT: Edit forms ── *@
+        <div class="pf-right">
+
+            @* Personal info *@
+            <div class="pf-card">
+                <div class="pf-section-title">Personal info</div>
+                <form method="post" asp-action="UpdateProfile">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="avatarConfig" id="avatarConfigField"
+                           value="@avatarJson" />
+
+                    <div class="pf-field-row">
+                        <div class="pf-field">
+                            <label>Display name</label>
+                            <input type="text" name="name" value="@Model.Name" required />
+                        </div>
+                    </div>
+                    <div class="pf-field">
+                        <label>Bio</label>
+                        <textarea name="bio" rows="3"
+                                  placeholder="Tell your team about yourself...">@Model.Bio</textarea>
+                    </div>
+                    <div class="pf-field-row">
+                        <div class="pf-field">
+                            <label>𝕏 Twitter / X</label>
+                            <input type="text" name="twitterHandle"
+                                   value="@Model.TwitterHandle"
+                                   placeholder="username (no @@)" />
+                        </div>
+                        <div class="pf-field">
+                            <label>◎ Instagram</label>
+                            <input type="text" name="instagramHandle"
+                                   value="@Model.InstagramHandle"
+                                   placeholder="username (no @@)" />
+                        </div>
+                    </div>
+                    <button type="submit" class="pf-btn">Save changes</button>
+                </form>
+            </div>
+
+            @* Change email *@
+            <div class="pf-card">
+                <div class="pf-section-title">Change email</div>
+                <form method="post" asp-action="ChangeEmail">
+                    @Html.AntiForgeryToken()
+                    <div class="pf-field">
+                        <label>Current email</label>
+                        <input type="email" value="@ViewBag.Email" disabled
+                               style="opacity:.5" />
+                    </div>
+                    <div class="pf-field">
+                        <label>New email</label>
+                        <input type="email" name="newEmail" placeholder="new@example.com" required />
+                    </div>
+                    <div class="pf-field">
+                        <label>Confirm with password</label>
+                        <input type="password" name="password"
+                               placeholder="Your current password" required />
+                    </div>
+                    <button type="submit" class="pf-btn">Update email</button>
+                </form>
+            </div>
+
+            @* Change password *@
+            <div class="pf-card">
+                <div class="pf-section-title">Change password</div>
+                <form method="post" asp-action="ChangePassword">
+                    @Html.AntiForgeryToken()
+                    <div class="pf-field">
+                        <label>Current password</label>
+                        <input type="password" name="currentPassword" required />
+                    </div>
+                    <div class="pf-field-row">
+                        <div class="pf-field">
+                            <label>New password</label>
+                            <input type="password" name="newPassword"
+                                   placeholder="Min. 6 characters" required />
+                        </div>
+                        <div class="pf-field">
+                            <label>Confirm new password</label>
+                            <input type="password" name="confirmPassword" required />
+                        </div>
+                    </div>
+                    <button type="submit" class="pf-btn-outline">Change password</button>
+                </form>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+    // Avatar customizer
+    let avatarConfig = JSON.parse(
+        document.getElementById('avatarConfigInput').value || '{}');
+
+    function updateAvatar() {
+        const color  = avatarConfig.color || '#EF9F27';
+        document.getElementById('avPreview').style.background       = color;
+        document.getElementById('avatarPreview').style.background   = color;
+        document.getElementById('avatarConfigField').value =
+            JSON.stringify(avatarConfig);
+    }
+
+    document.querySelectorAll('.av-swatch').forEach(sw => {
+        sw.addEventListener('click', () => {
+            const type = sw.dataset.type;
+            const val  = sw.dataset.val;
+            avatarConfig[type] = val;
+
+            // Update active state
+            sw.closest('.av-swatches').querySelectorAll('.av-swatch')
+              .forEach(s => s.classList.remove('active'));
+            sw.classList.add('active');
+
+            updateAvatar();
+        });
+    });
+</script>
+
+<style>
+    .pf-wrap  { max-width:900px; margin:0 auto; padding:28px 20px 80px; }
+    .pf-header { margin-bottom:28px; }
+    .pf-title  { font-family:'Barlow Condensed',sans-serif; font-size:36px; font-weight:700; color:var(--tx); }
+    .pf-title span { color:var(--o); }
+
+    .pf-grid  { display:grid; grid-template-columns:220px 1fr; gap:16px; align-items:start; }
+
+    .pf-left  { display:flex; flex-direction:column; gap:12px; }
+    .pf-right { display:flex; flex-direction:column; gap:12px; }
+
+    .pf-card  { background:var(--cd); border:0.5px solid var(--br); border-radius:12px; padding:20px; }
+
+    .pf-avatar { width:72px; height:72px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:'Barlow Condensed',sans-serif; font-size:24px; font-weight:700; color:#111110; margin:0 auto 12px; }
+    .pf-name   { font-size:16px; font-weight:500; color:var(--tx); text-align:center; }
+    .pf-bio    { font-size:12px; color:var(--mu); text-align:center; margin-top:6px; line-height:1.5; }
+
+    .pf-stats  { display:flex; justify-content:space-around; margin-top:14px; padding-top:14px; border-top:0.5px solid var(--br); }
+    .pf-stat   { text-align:center; }
+    .pf-stat strong { display:block; font-family:'Barlow Condensed',sans-serif; font-size:22px; font-weight:700; color:var(--tx); line-height:1; }
+    .pf-stat span   { font-size:11px; color:var(--mu); }
+
+    .pf-social { display:block; margin-top:8px; font-size:12px; padding:5px 10px; border-radius:6px; text-align:center; text-decoration:none; transition:opacity .15s; }
+    .pf-social:hover { opacity:.8; }
+    .tw { background:rgba(29,161,242,.1); color:#1DA1F2; }
+    .ig { background:rgba(225,48,108,.1); color:#E1306C; }
+
+    .pf-section-title { font-family:'Barlow Condensed',sans-serif; font-size:11px; font-weight:500; letter-spacing:.1em; text-transform:uppercase; color:var(--mu); margin-bottom:14px; }
+
+    .av-preview { width:56px; height:56px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:'Barlow Condensed',sans-serif; font-size:20px; font-weight:700; color:#111110; margin:0 auto 14px; transition:background .2s; }
+
+    .av-row    { margin-bottom:12px; }
+    .av-label  { font-size:11px; color:var(--mu); margin-bottom:6px; }
+    .av-swatches { display:flex; gap:6px; flex-wrap:wrap; }
+    .av-swatch { width:22px; height:22px; border-radius:50%; cursor:pointer; border:2px solid transparent; transition:border-color .15s; }
+    .av-swatch.active { border-color:var(--tx); }
+
+    .pf-field  { margin-bottom:12px; flex:1; }
+    .pf-field label { display:block; font-size:12px; color:var(--mu); margin-bottom:5px; }
+    .pf-field input, .pf-field textarea, .pf-field select {
+        width:100%; background:rgba(255,255,255,.05); border:0.5px solid var(--br);
+        border-radius:8px; padding:9px 12px; font-size:13px; color:var(--tx);
+        font-family:'DM Sans',sans-serif; outline:none; transition:border-color .15s; resize:vertical;
+    }
+    .pf-field input:focus, .pf-field textarea:focus { border-color:var(--o); }
+
+    .pf-field-row { display:flex; gap:12px; }
+
+    .pf-btn { background:var(--o); color:#111110; border:none; border-radius:8px; padding:10px 20px; font-size:13px; font-weight:500; font-family:'DM Sans',sans-serif; cursor:pointer; transition:opacity .15s; margin-top:4px; }
+    .pf-btn:hover { opacity:.88; }
+    .pf-btn-outline { background:transparent; border:0.5px solid var(--br); color:var(--tx); border-radius:8px; padding:10px 20px; font-size:13px; font-family:'DM Sans',sans-serif; cursor:pointer; transition:border-color .15s; margin-top:4px; }
+    .pf-btn-outline:hover { border-color:var(--o); color:var(--o); }
+
+    @@media (max-width:640px) {
+        .pf-grid { grid-template-columns:1fr; }
+        .pf-field-row { flex-direction:column; }
+    }
+</style>

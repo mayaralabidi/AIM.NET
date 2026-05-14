@@ -1,5 +1,6 @@
 ﻿using aim.Data;
 using aim.Extensions;
+using aim.Helpers;
 using aim.Models;
 using aim.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -257,6 +258,246 @@ namespace aim.Controllers
                 .ToList();
 
             return View(participant);
+        }
+
+        public async Task<IActionResult> Activity()
+        {
+            var participant = await this.GetCurrentParticipantAsync(_userManager, _context);
+            if (participant == null) return RedirectToAction("Login", "Auth");
+
+            var now = DateTime.UtcNow;
+            var yearStart = now.AddDays(-364).Date;
+
+            var completions = await _context.TaskCompletions
+                .Where(tc => tc.ParticipantId == participant.Id &&
+                             tc.CompletedAt >= yearStart)
+                .ToListAsync();
+
+            // Heatmap — count per day
+            var byDay = completions
+                .GroupBy(tc => tc.CompletedAt.Date)
+                .ToDictionary(g => g.Key, g => g.Count());
+
+            // Stats
+            var allCompletions = await _context.TaskCompletions
+                .CountAsync(tc => tc.ParticipantId == participant.Id);
+
+            var weekStart = now.AddDays(-(int)now.DayOfWeek).Date;
+            var monthStart = new DateTime(now.Year, now.Month, 1);
+
+            var thisWeek = completions.Count(tc => tc.CompletedAt.Date >= weekStart);
+            var thisMonth = completions.Count(tc => tc.CompletedAt.Date >= monthStart);
+
+            DateTime? bestDayDate = byDay.Any()
+    ? byDay.OrderByDescending(x => x.Value).First().Key
+    : null;
+
+            int bestDayCount = byDay.Any()
+                ? byDay.OrderByDescending(x => x.Value).First().Value
+                : 0;
+
+            // Weekly averages over last 12 weeks
+            var weeklyAverages = Enumerable.Range(0, 12)
+                .Select(i =>
+                {
+                    var wStart = now.AddDays(-((i + 1) * 7)).Date;
+                    var wEnd = now.AddDays(-(i * 7)).Date;
+                    return new
+                    {
+                        Label = wStart.ToString("MMM d"),
+                        Count = completions.Count(tc =>
+                            tc.CompletedAt.Date >= wStart &&
+                            tc.CompletedAt.Date < wEnd)
+                    };
+                })
+                .Reverse()
+                .ToList();
+
+            ViewBag.HeatmapData = byDay;
+            ViewBag.YearStart = yearStart;
+            ViewBag.AllCompletions = allCompletions;
+            ViewBag.ThisWeek = thisWeek;
+            ViewBag.ThisMonth = thisMonth;
+            ViewBag.BestDay = bestDayDate;
+            ViewBag.BestDayCount = bestDayCount;
+            ViewBag.WeeklyAverages = weeklyAverages;
+            ViewBag.AvgPerWeek = completions.Count > 0
+                ? Math.Round(completions.Count / 52.0, 1) : 0;
+
+            return View(participant);
+        }
+
+        // GET: Participants/Profile
+        public async Task<IActionResult> Profile()
+        {
+            var participant = await this.GetCurrentParticipantAsync(_userManager, _context);
+            if (participant == null) return RedirectToAction("Login", "Auth");
+
+            var user = await _userManager.GetUserAsync(User);
+            ViewBag.Email = user?.Email ?? "";
+
+            return View(participant);
+        }
+
+        // POST: Participants/UpdateProfile
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UpdateProfile(string name, string bio,
+                                                        string avatarConfig,
+                                                        string twitterHandle,
+                                                        string instagramHandle)
+        {
+            var participant = await this.GetCurrentParticipantAsync(_userManager, _context);
+            if (participant == null) return RedirectToAction("Login", "Auth");
+
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                TempData["Toast"] = "Name cannot be empty.";
+                TempData["ToastType"] = "error";
+                return RedirectToAction("Profile");
+            }
+
+            participant.Name = name.Trim();
+            participant.Bio = bio?.Trim();
+            participant.AvatarConfig = avatarConfig;
+            participant.TwitterHandle = twitterHandle?.Trim().TrimStart('@');
+            participant.InstagramHandle = instagramHandle?.Trim().TrimStart('@');
+
+            await _context.SaveChangesAsync();
+
+            TempData["Toast"] = "Profile updated!";
+            TempData["ToastType"] = "success";
+            return RedirectToAction("Profile");
+        }
+
+        // POST: Participants/ChangePassword
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ChangePassword(string currentPassword,
+                                                          string newPassword,
+                                                          string confirmPassword)
+        {
+            if (newPassword != confirmPassword)
+            {
+                TempData["Toast"] = "Passwords don't match.";
+                TempData["ToastType"] = "error";
+                return RedirectToAction("Profile");
+            }
+
+            if (newPassword.Length < 6)
+            {
+                TempData["Toast"] = "Password must be at least 6 characters.";
+                TempData["ToastType"] = "error";
+                return RedirectToAction("Profile");
+            }
+
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return RedirectToAction("Login", "Auth");
+
+            var result = await _userManager.ChangePasswordAsync(user, currentPassword, newPassword);
+
+            if (result.Succeeded)
+            {
+                TempData["Toast"] = "Password changed!";
+                TempData["ToastType"] = "success";
+            }
+            else
+            {
+                TempData["Toast"] = string.Join(" ", result.Errors.Select(e => e.Description));
+                TempData["ToastType"] = "error";
+            }
+
+            return RedirectToAction("Profile");
+        }
+
+        // POST: Participants/ChangeEmail
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ChangeEmail(string newEmail, string password)
+        {
+            if (string.IsNullOrWhiteSpace(newEmail))
+            {
+                TempData["Toast"] = "Email cannot be empty.";
+                TempData["ToastType"] = "error";
+                return RedirectToAction("Profile");
+            }
+
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return RedirectToAction("Login", "Auth");
+
+            var check = await _userManager.CheckPasswordAsync(user, password);
+            if (!check)
+            {
+                TempData["Toast"] = "Incorrect password.";
+                TempData["ToastType"] = "error";
+                return RedirectToAction("Profile");
+            }
+
+            user.Email = newEmail;
+            user.UserName = newEmail;
+
+            var result = await _userManager.UpdateAsync(user);
+
+            if (result.Succeeded)
+            {
+                // Update participant email too
+                var participant = await this.GetCurrentParticipantAsync(_userManager, _context);
+                if (participant != null)
+                {
+                    participant.Email = newEmail;
+                    await _context.SaveChangesAsync();
+                }
+
+                TempData["Toast"] = "Email updated!";
+                TempData["ToastType"] = "success";
+            }
+            else
+            {
+                TempData["Toast"] = string.Join(" ", result.Errors.Select(e => e.Description));
+                TempData["ToastType"] = "error";
+            }
+
+            return RedirectToAction("Profile");
+        }
+        public async Task<IActionResult> Leaderboard(string tab = "alltime", int page = 1)
+        {
+            var participant = await this.GetCurrentParticipantAsync(_userManager, _context);
+            if (participant == null) return RedirectToAction("Login", "Auth");
+
+            var now = DateTime.UtcNow;
+            var weekStart = now.AddDays(-(int)now.DayOfWeek).Date;
+            var monthStart = new DateTime(now.Year, now.Month, 1);
+
+            IQueryable<Participant> query = tab switch
+            {
+                "weekly" => _context.Participants
+                    .Where(p => _context.TaskCompletions
+                        .Any(tc => tc.ParticipantId == p.Id &&
+                                   tc.CompletedAt >= weekStart))
+                    .OrderByDescending(p => _context.TaskCompletions
+                        .Where(tc => tc.ParticipantId == p.Id &&
+                                     tc.CompletedAt >= weekStart)
+                        .Sum(tc => tc.PointsEarned)),
+
+                "monthly" => _context.Participants
+                    .Where(p => _context.TaskCompletions
+                        .Any(tc => tc.ParticipantId == p.Id &&
+                                   tc.CompletedAt >= monthStart))
+                    .OrderByDescending(p => _context.TaskCompletions
+                        .Where(tc => tc.ParticipantId == p.Id &&
+                                     tc.CompletedAt >= monthStart)
+                        .Sum(tc => tc.PointsEarned)),
+
+                _ => _context.Participants
+                    .OrderByDescending(p => p.TotalScore)
+            };
+
+            var paged = await PaginatedList<Participant>.CreateAsync(query, page, 25);
+
+            ViewBag.Tab = tab;
+            ViewBag.CurrentId = participant.Id;
+
+            return View(paged);
         }
 
         private bool ParticipantExists(int id) =>

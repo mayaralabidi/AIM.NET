@@ -19,6 +19,9 @@ namespace aim.Models
         [DataType(DataType.Date)]
         public DateTime EndDate { get; set; }
 
+        public int? CreatedByParticipantId { get; set; }
+        public Participant? CreatedBy { get; set; }
+
         public virtual ICollection<Participation> Participations { get; set; } = new List<Participation>();
         public virtual ICollection<ChallengeTask> Tasks { get; set; } = new List<ChallengeTask>();
     }

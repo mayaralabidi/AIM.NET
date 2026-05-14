@@ -29,6 +29,8 @@ namespace aim.Controllers
                 {
                     ViewBag.UnreadNotifications = await _context.Notification
                         .CountAsync(n => n.ParticipantId == participant.Id && !n.IsRead);
+
+                    ViewBag.FreezeTokens = participant.StreakFreezeTokens; // ← add this
                 }
             }
             await next();

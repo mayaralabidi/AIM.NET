@@ -20,6 +20,7 @@
             <a asp-controller="Participants" asp-action="Dashboard" class="nav-link">Dashboard</a>
             <a asp-controller="Participants" asp-action="Badges" class="nav-link">Badges</a>
             <a asp-controller="PersonalGoals" asp-action="Index" class="nav-link">Goals</a>
+            <a asp-controller="Participants" asp-action="Activity" class="nav-link">Activity</a>
             <a asp-controller="Notifications" asp-action="Feed" class="nav-link nav-bell">
                 🔔
                 @if ((int)(ViewBag.UnreadNotifications ?? 0) > 0)
@@ -27,8 +28,32 @@
                     <span class="bell-dot">@ViewBag.UnreadNotifications</span>
                 }
             </a>
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                <a asp-controller="Participants" asp-action="Profile" class="nav-user">
+                    @User.Identity.Name
+                </a>
+            }
         </div>
         <div class="aim-nav-right">
+
+            @* Search form in navbar *@
+            <form method="get" asp-action="Index" asp-controller="Search" class="nav-search">
+                <input type="text" name="q" placeholder="Search..." class="nav-search-input" />
+            </form>
+
+            @* New nav links *@
+            <a asp-controller="Follows" asp-action="Feed" class="nav-link">Feed</a>
+            <a asp-controller="Participants" asp-action="Leaderboard" class="nav-link">Rankings</a>
+            <a asp-controller="CheckIn" asp-action="Index" class="nav-link">Check-in</a>
+
+            @* Freeze token pill — only show if user has one *@
+            @if ((int)(ViewBag.FreezeTokens ?? 0) > 0)
+            {
+                <div class="freeze-pill" title="Streak freeze token — auto-activates if you miss a day">
+                    🧊 <span>1</span>
+                </div>
+            }
             @* Streak pill *@
             <div class="streak-pill">
                 <span class="flame">🔥</span>
@@ -61,6 +86,7 @@
         <a asp-controller="Participants" asp-action="Dashboard" class="mob-link">Dashboard</a>
         <a asp-controller="Participants" asp-action="Badges" class="mob-link">Badges</a>
         <a asp-controller="PersonalGoals" asp-action="Index" class="mob-link">Goals</a>
+        <a asp-controller="Participants" asp-action="Activity" class="mob-link">Activity</a>
         <a asp-controller="Notifications" asp-action="Feed" class="mob-link">🔔 Notifications</a>
         @if (User.Identity?.IsAuthenticated == true)
         {
@@ -68,6 +94,12 @@
                 @Html.AntiForgeryToken()
                 <button type="submit" class="mob-link mob-logout">Sign out</button>
             </form>
+        }
+        @if (User.Identity?.IsAuthenticated == true)
+        {
+            <a asp-controller="Participants" asp-action="Profile" class="nav-user">
+                @User.Identity.Name
+            </a>
         }
     </div>
 

@@ -408,3 +408,56 @@ a {
     font-size: 13px;
     color: var(--mu);
 }
+
+.nav-user {
+    font-size: 12px;
+    color: var(--mu);
+    border: 0.5px solid var(--br);
+    border-radius: 6px;
+    padding: 5px 12px;
+    transition: color .15s, border-color .15s;
+}
+
+    .nav-user:hover {
+        color: var(--tx);
+        border-color: rgba(255,255,255,.25);
+    }
+
+.freeze-pill {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(56, 189, 248, 0.1);
+    border: 0.5px solid rgba(56, 189, 248, 0.25);
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: 12px;
+    color: #7DD3FC;
+    font-weight: 500;
+}
+.nav-search {
+    display: flex;
+    align-items: center;
+}
+
+.nav-search-input {
+    background: rgba(255,255,255,.06);
+    border: 0.5px solid var(--br);
+    border-radius: 8px;
+    padding: 5px 12px;
+    font-size: 13px;
+    color: var(--tx);
+    font-family: 'DM Sans',sans-serif;
+    outline: none;
+    width: 160px;
+    transition: border-color .15s, width .2s;
+}
+
+    .nav-search-input:focus {
+        border-color: var(--o);
+        width: 220px;
+    }
+
+    .nav-search-input::placeholder {
+        color: var(--mu);
+    }

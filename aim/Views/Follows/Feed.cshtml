@@ -1,0 +1,241 @@
+﻿@model List<aim.Models.TaskCompletion>
+@{
+    ViewData["Title"] = "Feed";
+    var following = ViewBag.Following as List<aim.Models.Participant> ?? new();
+    var followingIds = ViewBag.FollowingIds as List<int> ?? new();
+}
+
+<div class="feed-wrap">
+    <div class="feed-header">
+        <div class="feed-title">Activity <span>Feed</span></div>
+        <a asp-action="Explore" class="btn-cta">Find people</a>
+    </div>
+
+    @if (!following.Any())
+    {
+        <div class="empty-state">
+            <div class="empty-icon">👥</div>
+            <div class="empty-text">You're not following anyone yet</div>
+            <div class="empty-sub">Find users to follow and see their activity here</div>
+            <a asp-action="Explore" class="btn-cta" style="margin-top:16px">Explore users</a>
+        </div>
+    }
+    else
+    {
+        @* Following sidebar *@
+        <div class="feed-grid">
+            <div class="feed-main">
+                @if (!Model.Any())
+                {
+                    <div class="empty-state">
+                        <div class="empty-icon">⚡</div>
+                        <div class="empty-text">No activity in the last 7 days</div>
+                        <div class="empty-sub">The people you follow haven't completed tasks recently</div>
+                    </div>
+                }
+                else
+                {
+                    <div class="activity-list">
+                        @foreach (var tc in Model)
+                        {
+                            var initials = string.Concat(
+                            tc.Participant!.Name.Split(' ').Take(2)
+                            .Select(w => w[0])).ToUpper();
+                            var diff = tc.ChallengeTask?.Difficulty;
+                            var diffColor = diff switch
+                            {
+                                aim.Models.enums.DifficultyLevel.Hard => "var(--r)",
+                                aim.Models.enums.DifficultyLevel.Medium => "var(--o)",
+                                _ => "var(--t)"
+                            };
+                            var ago = (DateTime.UtcNow - tc.CompletedAt).TotalHours < 1
+                            ? $"{(int)(DateTime.UtcNow - tc.CompletedAt).TotalMinutes}m ago"
+                            : (DateTime.UtcNow - tc.CompletedAt).TotalHours < 24
+                            ? $"{(int)(DateTime.UtcNow - tc.CompletedAt).TotalHours}h ago"
+                            : tc.CompletedAt.ToString("MMM d");
+
+                            <div class="activity-item">
+                                <div class="act-avatar">@initials</div>
+                                <div class="act-body">
+                                    <div class="act-text">
+                                        <strong>@tc.Participant.Name</strong> completed
+                                        <span style="color:@diffColor">@tc.ChallengeTask?.Title</span>
+                                    </div>
+                                    <div class="act-meta">
+                                        @tc.ChallengeTask?.Challenge?.Title · +@tc.PointsEarned pts · @ago
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+
+            <div class="feed-sidebar">
+                <div class="sidebar-label">Following (@following.Count)</div>
+                @foreach (var u in following)
+                {
+                    var initials = string.Concat(u.Name.Split(' ').Take(2).Select(w => w[0])).ToUpper();
+                    <div class="sidebar-user">
+                        <div class="s-avatar">@initials</div>
+                        <div class="s-info">
+                            <div class="s-name">@u.Name</div>
+                            <div class="s-meta">🔥 @u.CurrentStreak · @u.TotalScore pts</div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+<style>
+    .feed-wrap {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 28px 20px 80px;
+    }
+
+    .feed-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 24px;
+    }
+
+    .feed-title {
+        font-family: 'Barlow Condensed',sans-serif;
+        font-size: 36px;
+        font-weight: 700;
+        color: var(--tx);
+    }
+
+        .feed-title span {
+            color: var(--o);
+        }
+
+    .feed-grid {
+        display: grid;
+        grid-template-columns: 1fr 220px;
+        gap: 16px;
+    }
+
+    .feed-main {
+        min-width: 0;
+    }
+
+    .feed-sidebar {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .sidebar-label {
+        font-family: 'Barlow Condensed',sans-serif;
+        font-size: 11px;
+        letter-spacing: .1em;
+        text-transform: uppercase;
+        color: var(--mu);
+        margin-bottom: 8px;
+    }
+
+    .activity-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .activity-item {
+        background: var(--cd);
+        border: 0.5px solid var(--br);
+        border-radius: 12px;
+        padding: 14px 16px;
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .act-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: rgba(127,119,221,.15);
+        color: var(--p);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: 700;
+        flex-shrink: 0;
+    }
+
+    .act-body {
+        flex: 1;
+    }
+
+    .act-text {
+        font-size: 14px;
+        color: var(--tx);
+        line-height: 1.4;
+    }
+
+    .act-meta {
+        font-size: 12px;
+        color: var(--mu);
+        margin-top: 4px;
+    }
+
+    .sidebar-user {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 12px;
+        background: var(--cd);
+        border: 0.5px solid var(--br);
+        border-radius: 10px;
+        margin-bottom: 6px;
+    }
+
+    .s-avatar {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background: rgba(239,159,39,.15);
+        color: var(--o);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: 700;
+        flex-shrink: 0;
+    }
+
+    .s-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .s-name {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--tx);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .s-meta {
+        font-size: 11px;
+        color: var(--mu);
+    }
+
+    @@media (max-width:640px) {
+        .feed-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .feed-sidebar {
+            display: none;
+        }
+    }
+</style>

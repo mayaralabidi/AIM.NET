@@ -1,0 +1,231 @@
+﻿@model aim.Controllers.SearchResults
+@{
+    ViewData["Title"] = "Search";
+}
+
+<div class="sr-wrap">
+    <form method="get" asp-action="Index" asp-controller="Search" class="sr-form">
+        <input type="text" name="q" value="@Model.Query"
+               placeholder="Search challenges, users, badges..."
+               class="sr-input" autofocus />
+        <button type="submit" class="sr-btn">Search</button>
+    </form>
+
+    @if (!string.IsNullOrEmpty(Model.Query))
+    {
+        <div class="sr-summary">
+            @Model.Total result@(Model.Total != 1 ? "s" : "") for
+            <strong>"@Model.Query"</strong>
+        </div>
+
+        @if (!Model.Challenges.Any() && !Model.Users.Any() && !Model.Badges.Any())
+        {
+            <div class="empty-state">
+                <div class="empty-icon">🔍</div>
+                <div class="empty-text">No results found</div>
+                <div class="empty-sub">Try a different search term</div>
+            </div>
+        }
+
+        @if (Model.Challenges.Any())
+        {
+            <div class="section-label">Challenges</div>
+            <div class="sr-list">
+                @foreach (var c in Model.Challenges)
+                {
+                    <a asp-controller="Challenges" asp-action="Details"
+                       asp-route-id="@c.Id" class="sr-item">
+                        <div class="sr-icon">⚡</div>
+                        <div class="sr-body">
+                            <div class="sr-title">@c.Title</div>
+                            <div class="sr-sub">@c.Description</div>
+                        </div>
+                        <i class="ti ti-arrow-right sr-arrow" aria-hidden="true"></i>
+                    </a>
+                }
+            </div>
+        }
+
+        @if (Model.Users.Any())
+        {
+            <div class="section-label">Users</div>
+            <div class="sr-list">
+                @foreach (var u in Model.Users)
+                {
+                    var initials = string.Concat(u.Name.Split(' ').Take(2)
+                    .Select(w => w[0])).ToUpper();
+                    <a asp-controller="Follows" asp-action="Explore"
+                       asp-route-search="@u.Name" class="sr-item">
+                        <div class="sr-avatar">@initials</div>
+                        <div class="sr-body">
+                            <div class="sr-title">@u.Name</div>
+                            <div class="sr-sub">
+                                🔥 @u.CurrentStreak streak · @u.TotalScore pts
+                            </div>
+                        </div>
+                        <i class="ti ti-arrow-right sr-arrow" aria-hidden="true"></i>
+                    </a>
+                }
+            </div>
+        }
+
+        @if (Model.Badges.Any())
+        {
+            <div class="section-label">Badges</div>
+            <div class="sr-list">
+                @foreach (var b in Model.Badges)
+                {
+                    <a asp-controller="Participants" asp-action="Badges" class="sr-item">
+                        <div class="sr-icon">🏅</div>
+                        <div class="sr-body">
+                            <div class="sr-title">@b.Name</div>
+                            <div class="sr-sub">@b.Criteria</div>
+                        </div>
+                        <i class="ti ti-arrow-right sr-arrow" aria-hidden="true"></i>
+                    </a>
+                }
+            </div>
+        }
+    }
+</div>
+
+<style>
+    .sr-wrap {
+        max-width: 640px;
+        margin: 0 auto;
+        padding: 28px 20px 80px;
+    }
+
+    .sr-form {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 20px;
+    }
+
+    .sr-input {
+        flex: 1;
+        background: var(--cd);
+        border: 0.5px solid var(--br);
+        border-radius: 10px;
+        padding: 12px 16px;
+        font-size: 15px;
+        color: var(--tx);
+        font-family: 'DM Sans',sans-serif;
+        outline: none;
+        transition: border-color .15s;
+    }
+
+        .sr-input:focus {
+            border-color: var(--o);
+        }
+
+    .sr-btn {
+        background: var(--o);
+        color: #111110;
+        border: none;
+        border-radius: 10px;
+        padding: 12px 20px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        font-family: 'DM Sans',sans-serif;
+    }
+
+    .sr-summary {
+        font-size: 13px;
+        color: var(--mu);
+        margin-bottom: 20px;
+    }
+
+        .sr-summary strong {
+            color: var(--tx);
+        }
+
+    .section-label {
+        font-family: 'Barlow Condensed',sans-serif;
+        font-size: 11px;
+        font-weight: 500;
+        letter-spacing: .12em;
+        text-transform: uppercase;
+        color: var(--mu);
+        margin: 20px 0 10px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+        .section-label::after {
+            content: '';
+            flex: 1;
+            height: 0.5px;
+            background: var(--br);
+        }
+
+    .sr-list {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-bottom: 8px;
+    }
+
+    .sr-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: var(--cd);
+        border: 0.5px solid var(--br);
+        border-radius: 10px;
+        padding: 12px 16px;
+        text-decoration: none;
+        transition: border-color .15s;
+    }
+
+        .sr-item:hover {
+            border-color: rgba(255,255,255,.2);
+        }
+
+    .sr-icon {
+        font-size: 18px;
+        flex-shrink: 0;
+    }
+
+    .sr-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: rgba(239,159,39,.12);
+        color: var(--o);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: 700;
+        flex-shrink: 0;
+    }
+
+    .sr-body {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .sr-title {
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--tx);
+    }
+
+    .sr-sub {
+        font-size: 12px;
+        color: var(--mu);
+        margin-top: 2px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .sr-arrow {
+        font-size: 16px;
+        color: var(--mu);
+        flex-shrink: 0;
+    }
+</style>

@@ -132,6 +132,18 @@ namespace aim.Controllers
             }
 
             participant.TeamId = team.Id;
+
+            var isFirstMember = !await _context.TeamMemberships
+                .AnyAsync(m => m.TeamId == team.Id);
+
+            _context.TeamMemberships.Add(new TeamMembership
+            {
+                ParticipantId = participant.Id,
+                TeamId = team.Id,
+                Role = isFirstMember ? TeamRole.Admin : TeamRole.Member,
+                JoinedAt = DateTime.UtcNow
+            });
+
             await _context.SaveChangesAsync();
 
             TempData["Toast"] = $"Joined {team.Name}!";
@@ -155,11 +167,99 @@ namespace aim.Controllers
             var paged = await PaginatedList<Participant>.CreateAsync(query, page, 20);
 
             var participant = await this.GetCurrentParticipantAsync(_userManager, _context);
+            var memberships = await _context.TeamMemberships
+                .Where(m => m.TeamId == id)
+                .ToDictionaryAsync(m => m.ParticipantId, m => m.Role);
+
+            var myRole = memberships.GetValueOrDefault(participant?.Id ?? 0, TeamRole.Member);
+
+            ViewBag.Memberships = memberships;
+            ViewBag.MyRole = myRole;
 
             ViewBag.Team = team;
             ViewBag.CurrentParticipantId = participant?.Id ?? 0;
 
             return View(paged); 
+        }
+        // POST: Teams/SetRole
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SetRole(int teamId, int targetParticipantId, TeamRole role)
+        {
+            var participant = await this.GetCurrentParticipantAsync(_userManager, _context);
+            if (participant == null) return RedirectToAction("Login", "Auth");
+
+            // Only admin can set roles
+            var myMembership = await _context.TeamMemberships
+                .FirstOrDefaultAsync(m => m.TeamId == teamId &&
+                                           m.ParticipantId == participant.Id);
+
+            if (myMembership?.Role != TeamRole.Admin)
+            {
+                TempData["Toast"] = "Only admins can change roles.";
+                TempData["ToastType"] = "error";
+                return RedirectToAction("Leaderboard", new { id = teamId });
+            }
+
+            var targetMembership = await _context.TeamMemberships
+                .FirstOrDefaultAsync(m => m.TeamId == teamId &&
+                                           m.ParticipantId == targetParticipantId);
+
+            if (targetMembership != null)
+            {
+                targetMembership.Role = role;
+                await _context.SaveChangesAsync();
+
+                TempData["Toast"] = "Role updated!";
+                TempData["ToastType"] = "success";
+            }
+
+            return RedirectToAction("Leaderboard", new { id = teamId });
+        }
+
+        // POST: Teams/RemoveMember
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RemoveMember(int teamId, int targetParticipantId)
+        {
+            var participant = await this.GetCurrentParticipantAsync(_userManager, _context);
+            if (participant == null) return RedirectToAction("Login", "Auth");
+
+            var myMembership = await _context.TeamMemberships
+                .FirstOrDefaultAsync(m => m.TeamId == teamId &&
+                                           m.ParticipantId == participant.Id);
+
+            if (myMembership?.Role != TeamRole.Admin && myMembership?.Role != TeamRole.Captain)
+            {
+                TempData["Toast"] = "Only admins and captains can remove members.";
+                TempData["ToastType"] = "error";
+                return RedirectToAction("Leaderboard", new { id = teamId });
+            }
+
+            // Captain can't remove admin
+            var targetMembership = await _context.TeamMemberships
+                .FirstOrDefaultAsync(m => m.TeamId == teamId &&
+                                           m.ParticipantId == targetParticipantId);
+
+            if (targetMembership?.Role == TeamRole.Admin && myMembership.Role != TeamRole.Admin)
+            {
+                TempData["Toast"] = "Captains cannot remove admins.";
+                TempData["ToastType"] = "error";
+                return RedirectToAction("Leaderboard", new { id = teamId });
+            }
+
+            if (targetMembership != null)
+                _context.TeamMemberships.Remove(targetMembership);
+
+            // Remove from team
+            var target = await _context.Participants.FindAsync(targetParticipantId);
+            if (target != null) target.TeamId = null;
+
+            await _context.SaveChangesAsync();
+
+            TempData["Toast"] = "Member removed.";
+            TempData["ToastType"] = "warning";
+            return RedirectToAction("Leaderboard", new { id = teamId });
         }
 
         private bool TeamExists(int id) => _context.Teams.Any(e => e.Id == id);

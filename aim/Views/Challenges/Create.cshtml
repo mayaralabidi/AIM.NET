@@ -1,53 +1,247 @@
-﻿@model aim.Models.Challenge
-
-@{
-    ViewData["Title"] = "Create";
+﻿@{
+    ViewData["Title"] = "New Challenge";
 }
 
-<h1>Create</h1>
+<div class="cc-wrap">
+    <a asp-action="Index" class="back-link">← All challenges</a>
+    <div class="cc-title">Create a <span>Challenge</span></div>
 
-<h4>Challenge</h4>
-<hr />
-<div class="row">
-    <div class="col-md-4">
-        <form asp-action="Create">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <div class="form-group">
-                <label asp-for="Title" class="control-label"></label>
-                <input asp-for="Title" class="form-control" />
-                <span asp-validation-for="Title" class="text-danger"></span>
+    @if (ViewBag.Error != null)
+    {
+        <div class="form-error">@ViewBag.Error</div>
+    }
+
+    <form method="post" asp-action="CreateChallenge" id="challengeForm">
+        @Html.AntiForgeryToken()
+
+        <div class="cc-section">
+            <div class="section-label">Details</div>
+            <div class="field">
+                <label>Challenge title</label>
+                <input type="text" name="title" placeholder="e.g. 30-Day Discipline" required />
             </div>
-            <div class="form-group">
-                <label asp-for="Description" class="control-label"></label>
-                <input asp-for="Description" class="form-control" />
-                <span asp-validation-for="Description" class="text-danger"></span>
+            <div class="field">
+                <label>Description</label>
+                <textarea name="description" rows="3"
+                          placeholder="What is this challenge about?"></textarea>
             </div>
-            <div class="form-group">
-                <label asp-for="PointsReward" class="control-label"></label>
-                <input asp-for="PointsReward" class="form-control" />
-                <span asp-validation-for="PointsReward" class="text-danger"></span>
+            <div class="field">
+                <label>End date</label>
+                <input type="date" name="endDate" required
+                       min="@DateTime.UtcNow.AddDays(1).ToString("yyyy-MM-dd")" />
             </div>
-            <div class="form-group">
-                <label asp-for="StartDate" class="control-label"></label>
-                <input asp-for="StartDate" class="form-control" />
-                <span asp-validation-for="StartDate" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="EndDate" class="control-label"></label>
-                <input asp-for="EndDate" class="form-control" />
-                <span asp-validation-for="EndDate" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <input type="submit" value="Create" class="btn btn-primary" />
-            </div>
-        </form>
-    </div>
+        </div>
+
+        <div class="cc-section">
+            <div class="section-label">Tasks</div>
+            <div id="taskList"></div>
+            <button type="button" class="btn-add-task" onclick="addTask()">+ Add task</button>
+        </div>
+
+        <button type="submit" class="btn-create">Create Challenge</button>
+    </form>
 </div>
 
-<div>
-    <a asp-action="Index">Back to List</a>
-</div>
+<style>
+    .cc-wrap {
+        max-width: 640px;
+        margin: 0 auto;
+        padding: 28px 20px 80px;
+    }
 
-@section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
-}
+    .back-link {
+        font-size: 12px;
+        color: var(--mu);
+        transition: color .15s;
+        display: inline-block;
+        margin-bottom: 20px;
+    }
+
+        .back-link:hover {
+            color: var(--tx);
+        }
+
+    .cc-title {
+        font-family: 'Barlow Condensed',sans-serif;
+        font-size: 36px;
+        font-weight: 700;
+        color: var(--tx);
+        margin-bottom: 28px;
+    }
+
+        .cc-title span {
+            color: var(--o);
+        }
+
+    .form-error {
+        background: rgba(226,75,74,.12);
+        border: 0.5px solid rgba(226,75,74,.3);
+        border-radius: 8px;
+        padding: 10px 14px;
+        font-size: 13px;
+        color: var(--r);
+        margin-bottom: 16px;
+    }
+
+    .cc-section {
+        margin-bottom: 28px;
+    }
+
+    .section-label {
+        font-family: 'Barlow Condensed',sans-serif;
+        font-size: 11px;
+        font-weight: 500;
+        letter-spacing: .12em;
+        text-transform: uppercase;
+        color: var(--mu);
+        margin-bottom: 14px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+        .section-label::after {
+            content: '';
+            flex: 1;
+            height: 0.5px;
+            background: var(--br);
+        }
+
+    .field {
+        margin-bottom: 14px;
+    }
+
+    label {
+        display: block;
+        font-size: 12px;
+        color: var(--mu);
+        margin-bottom: 6px;
+    }
+
+    input[type=text], input[type=date], textarea, select {
+        width: 100%;
+        background: var(--cd);
+        border: 0.5px solid var(--br);
+        border-radius: 8px;
+        padding: 10px 14px;
+        font-size: 14px;
+        color: var(--tx);
+        font-family: 'DM Sans',sans-serif;
+        outline: none;
+        transition: border-color .15s;
+        resize: vertical;
+    }
+
+        input:focus, textarea:focus, select:focus {
+            border-color: var(--o);
+        }
+
+    .task-card {
+        background: var(--cd);
+        border: 0.5px solid var(--br);
+        border-radius: 10px;
+        padding: 14px;
+        margin-bottom: 10px;
+    }
+
+    .task-row {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 10px;
+    }
+
+        .task-row input {
+            flex: 1;
+        }
+
+        .task-row select {
+            width: 140px;
+            flex-shrink: 0;
+        }
+
+    .task-desc-field {
+        width: 100%;
+    }
+
+    .btn-remove {
+        background: none;
+        border: none;
+        color: var(--mu);
+        cursor: pointer;
+        font-size: 18px;
+        padding: 0 4px;
+        transition: color .15s;
+        align-self: center;
+    }
+
+        .btn-remove:hover {
+            color: var(--r);
+        }
+
+    .btn-add-task {
+        background: rgba(239,159,39,.1);
+        border: 0.5px solid rgba(239,159,39,.3);
+        color: var(--o);
+        border-radius: 8px;
+        padding: 9px 16px;
+        font-size: 13px;
+        cursor: pointer;
+        transition: background .15s;
+        font-family: 'DM Sans',sans-serif;
+    }
+
+        .btn-add-task:hover {
+            background: rgba(239,159,39,.2);
+        }
+
+    .btn-create {
+        width: 100%;
+        background: var(--o);
+        color: #111110;
+        border: none;
+        border-radius: 10px;
+        padding: 13px;
+        font-size: 15px;
+        font-weight: 500;
+        font-family: 'DM Sans',sans-serif;
+        cursor: pointer;
+        margin-top: 8px;
+        transition: opacity .15s;
+    }
+
+        .btn-create:hover {
+            opacity: .88;
+        }
+</style>
+
+<script>
+    let taskCount = 0;
+
+    function addTask() {
+        taskCount++;
+        const div = document.createElement('div');
+        div.className = 'task-card';
+        div.id = `task-${taskCount}`;
+        div.innerHTML = `
+            <div class="task-row">
+                <input type="text" name="taskTitles" placeholder="Task title" required/>
+                <select name="taskDifficulties">
+                    <option value="0">Easy</option>
+                    <option value="1">Medium</option>
+                    <option value="2">Hard</option>
+                </select>
+                <button type="button" class="btn-remove" onclick="removeTask('task-${taskCount}')">✕</button>
+            </div>
+            <input type="text" name="taskDescriptions" class="task-desc-field"
+                   placeholder="Description (optional)"/>
+        `;
+        document.getElementById('taskList').appendChild(div);
+    }
+
+    function removeTask(id) {
+        document.getElementById(id)?.remove();
+    }
+
+    // Add one task by default
+    addTask();
+</script>

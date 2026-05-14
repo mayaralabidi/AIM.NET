@@ -83,6 +83,21 @@
             <div class="stat-val">@ViewBag.TasksThisMonth</div>
             <div class="stat-sub">tasks completed</div>
         </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="color:#7DD3FC">🧊</div>
+            <div class="stat-value">@(Model.StreakFreezeTokens > 0 ? "1" : "0")</div>
+            <div class="stat-label">Freeze token</div>
+            <div class="stat-sub">
+                @if (Model.StreakFreezeTokens > 0)
+                {
+                    <span style="color:#7DD3FC">Active — ready to use</span>
+                }
+                else
+                {
+                    <span style="color:var(--mu)">Earn at 7, 14, 21... day streaks or every 10 tasks</span>
+                }
+            </div>
+        </div>
     </div>
 
     <div class="main-grid">
